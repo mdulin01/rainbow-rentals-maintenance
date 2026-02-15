@@ -186,6 +186,9 @@ export default function ExpensesList({ expenses, properties, onAdd, onEdit, onDe
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-sm font-medium text-white">{exp.description || '—'}</span>
+                      {exp.category === 'mileage' && exp.miles && (
+                        <span className="text-xs text-white/40 block">🚗 {exp.miles} mi</span>
+                      )}
                       {exp.vendor && <span className="text-xs text-white/40 block">{exp.vendor}</span>}
                     </td>
                     <td className="px-4 py-3">{getCategoryBadge(exp.category)}</td>

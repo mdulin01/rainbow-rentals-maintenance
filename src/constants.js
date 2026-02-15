@@ -52,8 +52,12 @@ export const expenseCategories = [
   { value: 'management', label: 'Management Fees', emoji: '👔' },
   { value: 'landscaping', label: 'Landscaping', emoji: '🌿' },
   { value: 'legal', label: 'Legal Fees', emoji: '⚖️' },
+  { value: 'mileage', label: 'Mileage', emoji: '🚗' },
   { value: 'other', label: 'Other', emoji: '📋' },
 ];
+
+// IRS standard mileage rate (2025/2026)
+export const MILEAGE_RATE = 0.70;
 
 // Income categories
 export const incomeCategories = [

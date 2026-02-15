@@ -853,7 +853,7 @@ export default function RainbowRentals() {
                             </div>
                             <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-4">
                               <p className="text-white/40 text-xs mb-1">Monthly Rent</p>
-                              <p className="text-3xl font-bold text-emerald-400">{formatCurrency(properties.reduce((sum, p) => sum + (p.tenant?.monthlyRent || p.monthlyRent || 0), 0))}</p>
+                              <p className="text-3xl font-bold text-emerald-400">{formatCurrency(properties.reduce((sum, p) => sum + (parseFloat(p.tenant?.monthlyRent || p.monthlyRent) || 0), 0))}</p>
                             </div>
                           </div>
                         </div>

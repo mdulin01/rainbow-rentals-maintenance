@@ -81,7 +81,7 @@ export default function RentLedger({ rentPayments, properties, onAdd, onEdit, on
   };
 
   // Summary stats
-  const totalExpected = properties.reduce((sum, p) => sum + (p.tenant?.monthlyRent || p.monthlyRent || 0), 0);
+  const totalExpected = properties.reduce((sum, p) => sum + (parseFloat(p.tenant?.monthlyRent || p.monthlyRent) || 0), 0);
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const thisMonthPayments = rentPayments.filter(r => r.month === currentMonth);

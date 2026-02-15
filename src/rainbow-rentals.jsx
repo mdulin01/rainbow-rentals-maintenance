@@ -565,9 +565,21 @@ export default function RainbowRentals() {
     return t.dueDate < today;
   });
 
-  // Filter properties by status
-  const vacantProperties = properties.filter(p => !p.tenant || p.tenant.status === 'vacant');
-  const activeProperties = properties.filter(p => p.tenant?.status === 'active');
+  // Filter properties by status - use propertyStatus if set, otherwise derive from tenant
+  const getEffectiveStatus = (p) => p.propertyStatus || (p.tenant?.name ? 'occupied' : 'vacant');
+  const vacantProperties = properties.filter(p => getEffectiveStatus(p) === 'vacant');
+  const activeProperties = properties.filter(p => getEffectiveStatus(p) === 'occupied');
+  const leaseExpiredProperties = properties.filter(p => getEffectiveStatus(p) === 'lease-expired');
+  const monthToMonthProperties = properties.filter(p => getEffectiveStatus(p) === 'month-to-month');
+
+  // Properties with expiring leases (within 60 days, not already expired)
+  const expiringLeases = properties.filter(p => {
+    if (!p.tenant?.leaseEnd) return false;
+    const end = new Date(p.tenant.leaseEnd + 'T00:00:00');
+    const today = new Date(); today.setHours(0,0,0,0);
+    const days = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+    return days > 0 && days <= 60;
+  });
 
   return (
     <SharedHubProvider value={sharedHub}>
@@ -676,7 +688,12 @@ export default function RainbowRentals() {
                     <button onClick={() => setActiveSection('rentals')} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-4 text-left hover:bg-white/[0.08] transition cursor-pointer">
                       <p className="text-white/40 text-xs mb-1">Properties</p>
                       <p className="text-2xl font-bold text-teal-400">{properties.length}</p>
-                      <p className="text-xs text-white/40">{activeProperties.length} occupied · {vacantProperties.length} vacant</p>
+                      <p className="text-xs text-white/40">
+                        {activeProperties.length} occupied
+                        {vacantProperties.length > 0 && ` · ${vacantProperties.length} vacant`}
+                        {leaseExpiredProperties.length > 0 && ` · ${leaseExpiredProperties.length} expired`}
+                        {monthToMonthProperties.length > 0 && ` · ${monthToMonthProperties.length} m-t-m`}
+                      </p>
                     </button>
                     <button onClick={() => setActiveSection('tenants')} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-4 text-left hover:bg-white/[0.08] transition cursor-pointer">
                       <p className="text-white/40 text-xs mb-1">Tenants</p>
@@ -714,16 +731,51 @@ export default function RainbowRentals() {
                     })()}
                   </div>
 
-                  {/* Vacant properties alert */}
-                  {vacantProperties.length > 0 && (
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 mb-6">
-                      <h3 className="text-sm font-semibold text-red-400 mb-2">Vacant Properties</h3>
-                      {vacantProperties.map(p => (
-                        <button key={p.id} onClick={() => { setActiveSection('rentals'); setSelectedProperty(p); }}
-                          className="block text-sm text-white/70 hover:text-white transition py-1">
-                          {p.emoji || '🏠'} {p.name}
-                        </button>
-                      ))}
+                  {/* Property status alerts */}
+                  {(vacantProperties.length > 0 || leaseExpiredProperties.length > 0 || expiringLeases.length > 0) && (
+                    <div className="space-y-3 mb-6">
+                      {vacantProperties.length > 0 && (
+                        <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4">
+                          <h3 className="text-sm font-semibold text-red-400 mb-2">Vacant Properties</h3>
+                          {vacantProperties.map(p => (
+                            <button key={p.id} onClick={() => { setActiveSection('rentals'); setSelectedProperty(p); }}
+                              className="block text-sm text-white/70 hover:text-white transition py-1">
+                              {p.emoji || '🏠'} {p.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {leaseExpiredProperties.length > 0 && (
+                        <div className="bg-orange-500/10 border border-orange-500/20 rounded-2xl p-4">
+                          <h3 className="text-sm font-semibold text-orange-400 mb-2">Lease Expired</h3>
+                          {leaseExpiredProperties.map(p => {
+                            const endDate = p.tenant?.leaseEnd;
+                            const endLabel = endDate ? ` — ${new Date(endDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}` : '';
+                            return (
+                              <button key={p.id} onClick={() => { setActiveSection('rentals'); setSelectedProperty(p); }}
+                                className="block text-sm text-white/70 hover:text-white transition py-1">
+                                {p.emoji || '🏠'} {p.name}<span className="text-orange-400/70">{endLabel}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {expiringLeases.length > 0 && (
+                        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-4">
+                          <h3 className="text-sm font-semibold text-yellow-400 mb-2">Leases Expiring Soon</h3>
+                          {expiringLeases.map(p => {
+                            const end = new Date(p.tenant.leaseEnd + 'T00:00:00');
+                            const today = new Date(); today.setHours(0,0,0,0);
+                            const days = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+                            return (
+                              <button key={p.id} onClick={() => { setActiveSection('rentals'); setSelectedProperty(p); }}
+                                className="block text-sm text-white/70 hover:text-white transition py-1">
+                                {p.emoji || '🏠'} {p.name} <span className="text-yellow-400/70">— {days}d left</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
 

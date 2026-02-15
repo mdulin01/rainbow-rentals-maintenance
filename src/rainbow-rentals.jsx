@@ -895,17 +895,25 @@ export default function RainbowRentals() {
               {activeSection === 'documents' && (
                 <div>
                   {/* Sub-nav */}
-                  <div className="flex gap-1.5 mb-4 items-center justify-start sticky top-[57px] z-20 bg-slate-900/95 backdrop-blur-md py-3 -mx-4 px-4">
-                    {[
-                      { id: 'all', emoji: '📄' },
-                      { id: 'byProperty', emoji: '🏠' },
-                      { id: 'byType', emoji: '📁' },
-                    ].map(tab => (
-                      <button key={tab.id} onClick={() => setDocumentViewMode(tab.id)}
-                        className={`flex-1 md:flex-none px-3 md:px-4 py-2 rounded-xl font-medium transition text-base md:text-lg text-center ${
-                          documentViewMode === tab.id ? 'bg-amber-500 text-white shadow-lg' : 'bg-white/10 text-slate-300 hover:bg-white/20'
-                        }`}>{tab.emoji}</button>
-                    ))}
+                  <div className="flex gap-1.5 mb-4 items-center justify-between sticky top-[57px] z-20 bg-slate-900/95 backdrop-blur-md py-3 -mx-4 px-4">
+                    <div className="flex gap-1.5">
+                      {[
+                        { id: 'all', emoji: '📄' },
+                        { id: 'byProperty', emoji: '🏠' },
+                        { id: 'byType', emoji: '📁' },
+                      ].map(tab => (
+                        <button key={tab.id} onClick={() => setDocumentViewMode(tab.id)}
+                          className={`px-3 md:px-4 py-2 rounded-xl font-medium transition text-base md:text-lg text-center ${
+                            documentViewMode === tab.id ? 'bg-amber-500 text-white shadow-lg' : 'bg-white/10 text-slate-300 hover:bg-white/20'
+                          }`}>{tab.emoji}</button>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => setShowAddDocumentModal('create')}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-amber-500 text-white rounded-xl text-sm font-medium hover:bg-amber-600 transition"
+                    >
+                      <Plus className="w-4 h-4" /> Add Document
+                    </button>
                   </div>
 
                   {/* All Documents */}

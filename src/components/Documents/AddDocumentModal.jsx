@@ -203,7 +203,7 @@ const AddDocumentModal = React.memo(({
                 <option value="">None</option>
                 {properties?.map(prop => (
                   <option key={prop.id} value={prop.id}>
-                    {prop.address}
+                    {prop.emoji || '🏠'} {prop.name}
                   </option>
                 ))}
               </select>

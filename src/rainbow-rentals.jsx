@@ -1389,27 +1389,28 @@ export default function RainbowRentals() {
                   { id: 'rentals', label: 'Rentals', emoji: '🏠', gradient: 'from-teal-400 to-cyan-500' },
                   { id: 'tenants', label: 'Tenants', emoji: '👤', gradient: 'from-blue-400 to-indigo-500' },
                   { id: 'rent', label: 'Rent', emoji: '💰', gradient: 'from-emerald-400 to-green-500' },
-                  { id: 'documents', label: 'Docs', emoji: '📄', gradient: 'from-amber-400 to-orange-500' },
-                ].map((section) => (
-                  <button
-                    key={section.id}
-                    onClick={() => {
-                      setActiveSection(section.id);
-                      if (section.id === 'rentals') { setSelectedProperty(null); setPropertyViewMode('grid'); }
-                      setShowAddNewMenu(false);
-                    }}
-                    className="relative flex flex-col items-center justify-center py-1.5 rounded-xl transition-all active:scale-95 min-w-[52px]"
-                  >
-                    <span className={`text-lg mb-0.5 transition-transform ${activeSection === section.id ? 'scale-110' : ''}`}>
-                      {section.emoji}
-                    </span>
-                    <span className={`text-[10px] font-medium transition-colors ${activeSection === section.id ? 'text-white' : 'text-white/40'}`}>
-                      {section.label}
-                    </span>
-                    {activeSection === section.id && (
-                      <div className={`absolute -bottom-0.5 w-6 h-0.5 rounded-full bg-gradient-to-r ${section.gradient}`} />
-                    )}
-                  </button>
+                ].map((section, idx) => (
+                  <React.Fragment key={section.id}>
+                    <button
+                      onClick={() => {
+                        setActiveSection(section.id);
+                        if (section.id === 'rentals') { setSelectedProperty(null); setPropertyViewMode('grid'); }
+                        setShowAddNewMenu(false);
+                      }}
+                      className="relative flex flex-col items-center justify-center py-1.5 rounded-xl transition-all active:scale-95 min-w-[52px]"
+                    >
+                      <span className={`text-lg mb-0.5 transition-transform ${activeSection === section.id ? 'scale-110' : ''}`}>
+                        {section.emoji}
+                      </span>
+                      <span className={`text-[10px] font-medium transition-colors ${activeSection === section.id ? 'text-white' : 'text-white/40'}`}>
+                        {section.label}
+                      </span>
+                      {activeSection === section.id && (
+                        <div className={`absolute -bottom-0.5 w-6 h-0.5 rounded-full bg-gradient-to-r ${section.gradient}`} />
+                      )}
+                    </button>
+                    {idx === 1 && isOwner && <div className="w-16" />}
+                  </React.Fragment>
                 ))}
               </div>
             </div>

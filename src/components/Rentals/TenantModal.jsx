@@ -1,8 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Upload, Image, Loader } from 'lucide-react';
 import { tenantStatuses } from '../../constants';
 
-const TenantModal = ({ property, tenant, onSave, onClose }) => {
+const TenantModal = ({ property, properties = [], tenant, onSave, onClose, onUploadPhoto }) => {
+  // If property has no id (e.g. _pickProperty mode), show property picker
+  const needsPropertyPicker = !property?.id;
+
+  const [selectedPropertyId, setSelectedPropertyId] = useState(
+    property?.id ? String(property.id) : ''
+  );
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -13,12 +20,15 @@ const TenantModal = ({ property, tenant, onSave, onClose }) => {
     monthlyRent: '',
     securityDeposit: '',
     status: 'pending',
+    licensePhotoUrl: '',
   });
+
+  const [uploadingLicense, setUploadingLicense] = useState(false);
+  const licenseInputRef = useRef(null);
 
   // Pre-fill if editing
   useEffect(() => {
     if (tenant) {
-      // Support legacy data that only has `name` (no firstName/lastName)
       let firstName = tenant.firstName || '';
       let lastName = tenant.lastName || '';
       if (!firstName && !lastName && tenant.name) {
@@ -36,11 +46,16 @@ const TenantModal = ({ property, tenant, onSave, onClose }) => {
         monthlyRent: tenant.monthlyRent || '',
         securityDeposit: tenant.securityDeposit || '',
         status: tenant.status || 'pending',
+        licensePhotoUrl: tenant.licensePhotoUrl || '',
       });
     } else {
       resetForm();
     }
   }, [tenant]);
+
+  useEffect(() => {
+    if (property?.id) setSelectedPropertyId(String(property.id));
+  }, [property]);
 
   const resetForm = () => {
     setFormData({
@@ -53,15 +68,26 @@ const TenantModal = ({ property, tenant, onSave, onClose }) => {
       monthlyRent: '',
       securityDeposit: '',
       status: 'pending',
+      licensePhotoUrl: '',
     });
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleLicenseUpload = async (file) => {
+    if (!file || !onUploadPhoto) return;
+    setUploadingLicense(true);
+    try {
+      const url = await onUploadPhoto(file, 'tenant-licenses');
+      setFormData(prev => ({ ...prev, licensePhotoUrl: url }));
+    } catch (err) {
+      console.error('License upload failed:', err);
+    } finally {
+      setUploadingLicense(false);
+    }
   };
 
   const handleSave = () => {
@@ -69,22 +95,34 @@ const TenantModal = ({ property, tenant, onSave, onClose }) => {
       alert('First name is required');
       return;
     }
-    // Compose full name for backward compat
+    if (needsPropertyPicker && !selectedPropertyId) {
+      alert('Please select a property');
+      return;
+    }
     const fullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim();
     onSave({
       ...formData,
       name: fullName,
-    });
+    }, needsPropertyPicker ? selectedPropertyId : null);
   };
+
+  const resolvedProperty = needsPropertyPicker
+    ? properties.find(p => String(p.id) === selectedPropertyId)
+    : property;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-slate-800/95 border border-white/15 rounded-2xl w-full max-w-2xl">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 bg-slate-800 border-b border-white/15">
-          <h2 className="text-2xl font-bold text-white">
-            {tenant?.name || tenant?.firstName ? 'Edit Tenant' : 'Add Tenant'}
-          </h2>
+          <div>
+            <h2 className="text-2xl font-bold text-white">
+              {tenant?.name || tenant?.firstName ? 'Edit Tenant' : 'Add Tenant'}
+            </h2>
+            {resolvedProperty?.name && (
+              <p className="text-sm text-white/40 mt-0.5">{resolvedProperty.emoji || '🏠'} {resolvedProperty.name}</p>
+            )}
+          </div>
           <button
             onClick={onClose}
             className="p-2 hover:bg-white/10 rounded-lg transition text-slate-400 hover:text-white"
@@ -95,6 +133,34 @@ const TenantModal = ({ property, tenant, onSave, onClose }) => {
 
         {/* Content */}
         <div className="p-6 space-y-4 max-h-[calc(90vh-150px)] overflow-y-auto">
+          {/* Property Picker (when adding from Tenants page) */}
+          {needsPropertyPicker && (
+            <div>
+              <label className="block text-slate-400 text-sm mb-2">Property *</label>
+              <select
+                value={selectedPropertyId}
+                onChange={e => setSelectedPropertyId(e.target.value)}
+                className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/30 transition"
+              >
+                <option value="" className="bg-slate-800">Select a property...</option>
+                {properties.filter(p => !p.tenant?.name).map(p => (
+                  <option key={p.id} value={String(p.id)} className="bg-slate-800">
+                    {p.emoji || '🏠'} {p.name}
+                  </option>
+                ))}
+                {properties.filter(p => p.tenant?.name).length > 0 && (
+                  <optgroup label="Already has tenant">
+                    {properties.filter(p => p.tenant?.name).map(p => (
+                      <option key={p.id} value={String(p.id)} className="bg-slate-800">
+                        {p.emoji || '🏠'} {p.name} (occupied)
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
+            </div>
+          )}
+
           {/* Personal Information */}
           <div>
             <h3 className="text-white font-semibold mb-4">Personal Information</h3>
@@ -108,7 +174,7 @@ const TenantModal = ({ property, tenant, onSave, onClose }) => {
                   onChange={handleChange}
                   placeholder="John"
                   className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-white/30 transition"
-                  autoFocus
+                  autoFocus={!needsPropertyPicker}
                 />
               </div>
               <div>
@@ -158,6 +224,59 @@ const TenantModal = ({ property, tenant, onSave, onClose }) => {
                     </option>
                   ))}
                 </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Driver's License Photo */}
+          <div>
+            <h3 className="text-white font-semibold mb-4">Driver's License</h3>
+            <div className="flex items-start gap-4">
+              {formData.licensePhotoUrl ? (
+                <div className="relative group">
+                  <img
+                    src={formData.licensePhotoUrl}
+                    alt="Driver's License"
+                    className="w-48 h-28 object-cover rounded-xl border border-white/15"
+                  />
+                  <button
+                    onClick={() => setFormData(prev => ({ ...prev, licensePhotoUrl: '' }))}
+                    className="absolute top-1 right-1 w-6 h-6 bg-red-500/80 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                  >
+                    <X className="w-3 h-3 text-white" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => licenseInputRef.current?.click()}
+                  disabled={uploadingLicense}
+                  className="w-48 h-28 border-2 border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center gap-1.5 hover:bg-white/5 hover:border-white/30 transition text-white/40 disabled:opacity-50"
+                >
+                  {uploadingLicense ? (
+                    <Loader className="w-6 h-6 animate-spin" />
+                  ) : (
+                    <>
+                      <Upload className="w-5 h-5" />
+                      <span className="text-xs">Upload License</span>
+                    </>
+                  )}
+                </button>
+              )}
+              <input
+                ref={licenseInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (file) handleLicenseUpload(file);
+                  e.target.value = '';
+                }}
+              />
+              <div className="flex-1">
+                <p className="text-xs text-white/30">
+                  Upload a photo of the tenant's driver's license for your records. The image is stored securely.
+                </p>
               </div>
             </div>
           </div>
@@ -229,7 +348,8 @@ const TenantModal = ({ property, tenant, onSave, onClose }) => {
           </button>
           <button
             onClick={handleSave}
-            className="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-lg transition"
+            disabled={uploadingLicense}
+            className="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-lg transition disabled:opacity-50"
           >
             Save Tenant
           </button>

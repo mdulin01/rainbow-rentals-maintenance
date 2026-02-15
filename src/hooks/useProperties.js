@@ -45,15 +45,22 @@ export const useProperties = (currentUser, saveProperties, showToast) => {
 
   // ========== TENANT CRUD ==========
   const updateTenant = useCallback((propertyId, tenantData) => {
+    let matched = false;
     const newProperties = properties.map(p => {
-      if (p.id === propertyId) {
+      if (String(p.id) === String(propertyId)) {
+        matched = true;
         return { ...p, tenant: { ...p.tenant, ...tenantData } };
       }
       return p;
     });
-    setProperties(newProperties);
-    saveRef.current(newProperties);
-    showToast('Tenant updated', 'success');
+    if (matched) {
+      setProperties(newProperties);
+      saveRef.current(newProperties);
+      showToast('Tenant saved', 'success');
+    } else {
+      console.error('updateTenant: no property matched id', propertyId);
+      showToast('Error: property not found', 'error');
+    }
   }, [properties, showToast]);
 
   const removeTenant = useCallback((propertyId) => {

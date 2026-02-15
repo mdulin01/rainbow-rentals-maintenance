@@ -1283,15 +1283,29 @@ export default function RainbowRentals() {
         {showTenantModal && (
           <TenantModal
             property={showTenantModal}
+            properties={properties}
             tenant={showTenantModal?.tenant}
-            onSave={(tenantData) => {
-              updateTenant(showTenantModal.id, tenantData);
-              if (selectedProperty?.id === showTenantModal.id) {
-                setSelectedProperty({ ...selectedProperty, tenant: tenantData });
+            onSave={(tenantData, overridePropertyId) => {
+              // Determine target property ID
+              const targetId = overridePropertyId || showTenantModal.id;
+              if (!targetId) {
+                showToast('No property selected', 'error');
+                return;
+              }
+              // Convert to match property id type for strict equality
+              const targetProp = properties.find(p => String(p.id) === String(targetId));
+              if (!targetProp) {
+                showToast('Property not found', 'error');
+                return;
+              }
+              updateTenant(targetProp.id, tenantData);
+              if (selectedProperty && String(selectedProperty.id) === String(targetProp.id)) {
+                setSelectedProperty({ ...selectedProperty, tenant: { ...selectedProperty.tenant, ...tenantData } });
               }
               setShowTenantModal(null);
             }}
             onClose={() => setShowTenantModal(null)}
+            onUploadPhoto={uploadPhoto}
           />
         )}
 

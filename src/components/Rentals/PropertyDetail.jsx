@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Edit3, MapPin, User, DollarSign, Calendar, Phone, Mail, FileText, Image, Trash2, Plus } from 'lucide-react';
+import { ArrowLeft, Edit3, MapPin, User, DollarSign, Calendar, Phone, Mail, FileText, Image, Trash2, Plus, Lightbulb, X } from 'lucide-react';
 import { tenantStatuses } from '../../constants';
 
-const PropertyDetail = ({ property, onBack, onEdit, onDelete, onEditTenant, onAddTenant, onRemoveTenant }) => {
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'tasks' | 'photos' | 'notes'
+const PropertyDetail = ({ property, onBack, onEdit, onDelete, onEditTenant, onAddTenant, onRemoveTenant, onUpdateProperty }) => {
+  const [activeTab, setActiveTab] = useState('overview');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showAddIdea, setShowAddIdea] = useState(false);
+  const [ideaForm, setIdeaForm] = useState({ title: '', description: '', priority: 'medium' });
 
   if (!property) {
     return (
@@ -68,8 +70,8 @@ const PropertyDetail = ({ property, onBack, onEdit, onDelete, onEditTenant, onAd
         </div>
 
         {/* Tabs */}
-        <div className="flex items-center gap-8 px-6 border-t border-white/10">
-          {['overview', 'tasks', 'photos', 'notes'].map(tab => (
+        <div className="flex items-center gap-8 px-6 border-t border-white/10 overflow-x-auto">
+          {['overview', 'ideas', 'photos', 'notes'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -290,9 +292,133 @@ const PropertyDetail = ({ property, onBack, onEdit, onDelete, onEditTenant, onAd
           </div>
         )}
 
-        {activeTab === 'tasks' && (
-          <div className="py-8 text-center text-slate-400">
-            <p>Tasks feature coming soon</p>
+        {activeTab === 'ideas' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <Lightbulb className="w-5 h-5 text-yellow-400" />
+                Upgrade Ideas
+              </h2>
+              <button
+                onClick={() => { setShowAddIdea(true); setIdeaForm({ title: '', description: '', priority: 'medium' }); }}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500/20 text-yellow-300 rounded-lg text-sm font-medium hover:bg-yellow-500/30 transition"
+              >
+                <Plus className="w-4 h-4" /> Add Idea
+              </button>
+            </div>
+
+            {/* Add Idea inline form */}
+            {showAddIdea && (
+              <div className="bg-slate-800/80 border border-white/15 rounded-xl p-4 space-y-3">
+                <input
+                  type="text"
+                  value={ideaForm.title}
+                  onChange={e => setIdeaForm(f => ({ ...f, title: e.target.value }))}
+                  placeholder="Idea title (e.g., New kitchen countertops)"
+                  className="w-full px-3 py-2 bg-white/[0.05] border border-white/[0.08] rounded-xl text-sm text-white placeholder-white/30 focus:outline-none focus:border-yellow-500/50"
+                  autoFocus
+                />
+                <textarea
+                  value={ideaForm.description}
+                  onChange={e => setIdeaForm(f => ({ ...f, description: e.target.value }))}
+                  placeholder="Details, estimated cost, notes..."
+                  rows={2}
+                  className="w-full px-3 py-2 bg-white/[0.05] border border-white/[0.08] rounded-xl text-sm text-white placeholder-white/30 focus:outline-none focus:border-yellow-500/50 resize-none"
+                />
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-white/40">Priority:</label>
+                  {['high', 'medium', 'low'].map(p => (
+                    <button key={p} onClick={() => setIdeaForm(f => ({ ...f, priority: p }))}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition capitalize ${
+                        ideaForm.priority === p
+                          ? p === 'high' ? 'bg-red-500/20 text-red-300 border border-red-500/30'
+                            : p === 'medium' ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
+                            : 'bg-white/10 text-white/60 border border-white/20'
+                          : 'bg-white/[0.05] text-white/40 border border-transparent hover:bg-white/10'
+                      }`}
+                    >{p}</button>
+                  ))}
+                </div>
+                <div className="flex justify-end gap-2">
+                  <button onClick={() => setShowAddIdea(false)} className="px-3 py-1.5 text-white/50 hover:text-white text-sm transition">Cancel</button>
+                  <button
+                    onClick={() => {
+                      if (!ideaForm.title.trim()) return;
+                      const ideas = [...(property.ideas || []), {
+                        id: Date.now().toString(),
+                        title: ideaForm.title,
+                        description: ideaForm.description,
+                        priority: ideaForm.priority,
+                        status: 'idea',
+                        createdAt: new Date().toISOString(),
+                      }];
+                      onUpdateProperty(property.id, { ideas });
+                      setShowAddIdea(false);
+                      setIdeaForm({ title: '', description: '', priority: 'medium' });
+                    }}
+                    disabled={!ideaForm.title.trim()}
+                    className="px-4 py-1.5 bg-yellow-500 text-white rounded-lg text-sm font-medium hover:bg-yellow-600 transition disabled:opacity-50"
+                  >Save</button>
+                </div>
+              </div>
+            )}
+
+            {/* Ideas list */}
+            {(property.ideas || []).length === 0 && !showAddIdea && (
+              <div className="py-12 text-center text-slate-400">
+                <Lightbulb className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p>No upgrade ideas yet</p>
+                <p className="text-xs text-white/30 mt-1">Add ideas for potential improvements to this property</p>
+              </div>
+            )}
+
+            {(property.ideas || []).map(idea => (
+              <div key={idea.id} className="bg-slate-800/50 border border-white/15 rounded-xl p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                        idea.priority === 'high' ? 'bg-red-500/20 text-red-300' :
+                        idea.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-300' :
+                        'bg-white/10 text-white/50'
+                      }`}>{idea.priority}</span>
+                      <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                        idea.status === 'done' ? 'bg-green-500/20 text-green-300' :
+                        idea.status === 'in-progress' ? 'bg-blue-500/20 text-blue-300' :
+                        'bg-white/10 text-white/50'
+                      }`}>{idea.status || 'idea'}</span>
+                    </div>
+                    <h3 className="text-white font-medium">{idea.title}</h3>
+                    {idea.description && <p className="text-sm text-white/50 mt-1">{idea.description}</p>}
+                  </div>
+                  <div className="flex items-center gap-1 ml-2">
+                    {idea.status !== 'done' && (
+                      <button
+                        onClick={() => {
+                          const ideas = (property.ideas || []).map(i =>
+                            i.id === idea.id ? { ...i, status: i.status === 'in-progress' ? 'done' : 'in-progress' } : i
+                          );
+                          onUpdateProperty(property.id, { ideas });
+                        }}
+                        className="p-1.5 hover:bg-white/10 rounded-lg transition text-white/40 hover:text-green-400 text-xs"
+                        title={idea.status === 'in-progress' ? 'Mark done' : 'Start'}
+                      >
+                        {idea.status === 'in-progress' ? '✅' : '▶️'}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        const ideas = (property.ideas || []).filter(i => i.id !== idea.id);
+                        onUpdateProperty(property.id, { ideas });
+                      }}
+                      className="p-1.5 hover:bg-red-500/10 rounded-lg transition text-white/40 hover:text-red-400"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 

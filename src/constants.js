@@ -42,17 +42,16 @@ export const documentTypes = [
 
 // Expense categories
 export const expenseCategories = [
-  { value: 'mortgage', label: 'Mortgage', emoji: '🏦' },
+  { value: 'repair', label: 'Repair', emoji: '🔧' },
   { value: 'insurance', label: 'Insurance', emoji: '🛡️' },
-  { value: 'repairs', label: 'Repairs & Maintenance', emoji: '🔧' },
+  { value: 'maintenance', label: 'Maintenance', emoji: '🔩' },
+  { value: 'purchase', label: 'Purchase', emoji: '🛒' },
+  { value: 'mortgage', label: 'Mortgage', emoji: '🏦' },
   { value: 'utilities', label: 'Utilities', emoji: '💡' },
   { value: 'taxes', label: 'Property Taxes', emoji: '📊' },
   { value: 'management', label: 'Management Fees', emoji: '👔' },
   { value: 'landscaping', label: 'Landscaping', emoji: '🌿' },
-  { value: 'cleaning', label: 'Cleaning', emoji: '🧹' },
   { value: 'legal', label: 'Legal Fees', emoji: '⚖️' },
-  { value: 'advertising', label: 'Advertising', emoji: '📢' },
-  { value: 'supplies', label: 'Supplies', emoji: '📦' },
   { value: 'other', label: 'Other', emoji: '📋' },
 ];
 

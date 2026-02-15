@@ -37,6 +37,10 @@ import TenantsList from './components/Tenants/TenantsList';
 import RentLedger from './components/Rent/RentLedger';
 import AddRentPaymentModal from './components/Rent/AddRentPaymentModal';
 
+// Expenses components
+import ExpensesList from './components/Expenses/ExpensesList';
+import AddExpenseModal from './components/Expenses/AddExpenseModal';
+
 // Documents components
 import DocumentCard from './components/Documents/DocumentCard';
 import AddDocumentModal from './components/Documents/AddDocumentModal';
@@ -53,6 +57,7 @@ import { useProperties } from './hooks/useProperties';
 import { useDocuments } from './hooks/useDocuments';
 import { useFinancials } from './hooks/useFinancials';
 import { useRent } from './hooks/useRent';
+import { useExpenses } from './hooks/useExpenses';
 
 // Contexts
 import { SharedHubProvider } from './contexts/SharedHubContext';
@@ -120,6 +125,7 @@ export default function RainbowRentals() {
   const saveDocumentsRef = useRef(() => {});
   const saveFinancialsRef = useRef(() => {});
   const saveRentRef = useRef(() => {});
+  const saveExpensesRef = useRef(() => {});
 
   // ========== HOOKS ==========
   const sharedHub = useSharedHub(currentUser, saveSharedHubRef.current, showToast);
@@ -174,6 +180,13 @@ export default function RainbowRentals() {
     showAddRentModal, setShowAddRentModal,
     addRentPayment, updateRentPayment, deleteRentPayment,
   } = rentHook;
+
+  const expensesHook = useExpenses(currentUser, saveExpensesRef.current, showToast);
+  const {
+    expenses, setExpenses,
+    showAddExpenseModal, setShowAddExpenseModal,
+    addExpense, updateExpense, deleteExpense,
+  } = expensesHook;
 
   // Document viewer
   const [viewingDocument, setViewingDocument] = useState(null);
@@ -303,6 +316,22 @@ export default function RainbowRentals() {
 
   useEffect(() => { saveRentRef.current = saveRentToFirestore; }, [saveRentToFirestore]);
 
+  const saveExpensesToFirestore = useCallback(async (newExpenses) => {
+    if (!user) return;
+    try {
+      await setDoc(doc(db, 'rentalData', 'expenses'), {
+        expenses: newExpenses,
+        lastUpdated: new Date().toISOString(),
+        updatedBy: currentUser
+      }, { merge: true });
+    } catch (error) {
+      console.error('Error saving expenses:', error);
+      showToast('Failed to save expense data.', 'error');
+    }
+  }, [user, currentUser, showToast]);
+
+  useEffect(() => { saveExpensesRef.current = saveExpensesToFirestore; }, [saveExpensesToFirestore]);
+
   // ========== FIRESTORE LOAD (onSnapshot) ==========
   useEffect(() => {
     if (!user) return;
@@ -375,12 +404,25 @@ export default function RainbowRentals() {
       (error) => console.error('Error loading rent data:', error)
     );
 
+    // Subscribe to expenses
+    const expensesUnsubscribe = onSnapshot(
+      doc(db, 'rentalData', 'expenses'),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.expenses) setExpenses(data.expenses);
+        }
+      },
+      (error) => console.error('Error loading expenses:', error)
+    );
+
     return () => {
       hubUnsubscribe();
       propertiesUnsubscribe();
       documentsUnsubscribe();
       financialsUnsubscribe();
       rentUnsubscribe();
+      expensesUnsubscribe();
     };
   }, [user]);
 
@@ -480,6 +522,8 @@ export default function RainbowRentals() {
       .forEach(t => results.push({ type: 'transaction', item: t, section: 'financials' }));
     rentPayments.filter(r => (r.tenantName || '').toLowerCase().includes(q) || (r.propertyName || '').toLowerCase().includes(q) || (r.month || '').includes(q))
       .forEach(r => results.push({ type: 'rent', item: r, section: 'rent' }));
+    expenses.filter(e => (e.description || '').toLowerCase().includes(q) || (e.vendor || '').toLowerCase().includes(q) || (e.propertyName || '').toLowerCase().includes(q))
+      .forEach(e => results.push({ type: 'expense', item: e, section: 'expenses' }));
 
     return results;
   };
@@ -510,7 +554,7 @@ export default function RainbowRentals() {
   // Check if any modal is open (to hide nav)
   const anyModalOpen = showAddTaskModal || showSharedListModal || showAddIdeaModal ||
     showNewPropertyModal || showTenantModal || showAddDocumentModal || showAddTransactionModal ||
-    showAddRentModal || viewingDocument || selectedProperty;
+    showAddRentModal || showAddExpenseModal || viewingDocument || selectedProperty;
 
   // Filter tasks for Hub dashboard
   const pendingTasks = sharedTasks.filter(t => t.status !== 'done');
@@ -548,6 +592,7 @@ export default function RainbowRentals() {
                   { id: 'rentals', label: 'Properties', emoji: '🏠' },
                   { id: 'tenants', label: 'Tenants', emoji: '👤' },
                   { id: 'rent', label: 'Rents', emoji: '💰' },
+                  { id: 'expenses', label: 'Expenses', emoji: '💸' },
                   { id: 'documents', label: 'Documents', emoji: '📄' },
                 ].map(tab => (
                   <button
@@ -646,9 +691,13 @@ export default function RainbowRentals() {
                       const ytdIncome = transactions
                         .filter(t => t.type === 'income' && (t.date || '').startsWith(currentYear))
                         .reduce((sum, t) => sum + (t.amount || 0), 0) + ytdRentCollected;
-                      const ytdExpenses = transactions
+                      const ytdTransactionExpenses = transactions
                         .filter(t => t.type === 'expense' && (t.date || '').startsWith(currentYear))
                         .reduce((sum, t) => sum + (t.amount || 0), 0);
+                      const ytdExpenseRecords = expenses
+                        .filter(e => (e.date || '').startsWith(currentYear))
+                        .reduce((sum, e) => sum + (e.amount || 0), 0);
+                      const ytdExpenses = ytdTransactionExpenses + ytdExpenseRecords;
                       const ytdProfit = ytdIncome - ytdExpenses;
                       return (
                         <>
@@ -758,6 +807,10 @@ export default function RainbowRentals() {
                       uploadingPhoto={uploadingPropertyPhoto === selectedProperty.id}
                       tasks={sharedTasks.filter(t => t.linkedTo?.propertyId === String(selectedProperty.id))}
                       showToast={showToast}
+                      onUpdateProperty={(propId, updates) => {
+                        updateProperty(propId, updates);
+                        setSelectedProperty(prev => ({ ...prev, ...updates }));
+                      }}
                     />
                   ) : (
                     <>
@@ -901,6 +954,24 @@ export default function RainbowRentals() {
                       title: 'Delete Payment',
                       message: 'Delete this rent payment record?',
                       onConfirm: () => { deleteRentPayment(paymentId); setConfirmDialog(null); },
+                    });
+                  }}
+                  showToast={showToast}
+                />
+              )}
+
+              {/* ========== EXPENSES SECTION ========== */}
+              {activeSection === 'expenses' && (
+                <ExpensesList
+                  expenses={expenses}
+                  properties={properties}
+                  onAdd={() => setShowAddExpenseModal('create')}
+                  onEdit={(expense) => setShowAddExpenseModal(expense)}
+                  onDelete={(expenseId) => {
+                    setConfirmDialog({
+                      title: 'Delete Expense',
+                      message: 'Delete this expense record?',
+                      onConfirm: () => { deleteExpense(expenseId); setConfirmDialog(null); },
                     });
                   }}
                   showToast={showToast}
@@ -1294,6 +1365,30 @@ export default function RainbowRentals() {
           />
         )}
 
+        {/* Expense Modal */}
+        {showAddExpenseModal && (
+          <AddExpenseModal
+            expense={typeof showAddExpenseModal === 'object' ? showAddExpenseModal : null}
+            properties={properties}
+            onSave={(expenseData) => {
+              if (typeof showAddExpenseModal === 'object' && showAddExpenseModal.id) {
+                updateExpense(showAddExpenseModal.id, expenseData);
+              } else {
+                addExpense({ ...expenseData, id: Date.now().toString(), createdAt: new Date().toISOString(), createdBy: currentUser });
+              }
+              setShowAddExpenseModal(null);
+            }}
+            onDelete={(expenseId) => {
+              setConfirmDialog({
+                title: 'Delete Expense',
+                message: 'Delete this expense record?',
+                onConfirm: () => { deleteExpense(expenseId); setShowAddExpenseModal(null); setConfirmDialog(null); },
+              });
+            }}
+            onClose={() => setShowAddExpenseModal(null)}
+          />
+        )}
+
         {/* Confirm Dialog */}
         {confirmDialog && (
           <ConfirmDialog
@@ -1326,11 +1421,10 @@ export default function RainbowRentals() {
                   <div className="grid grid-cols-3 gap-3">
                     {[
                       { action: () => setShowAddTaskModal('create'), icon: '✅', label: 'Task', gradient: 'from-blue-400 to-indigo-500' },
-                      { action: () => setShowNewPropertyModal('create'), icon: '🏠', label: 'Property', gradient: 'from-teal-400 to-cyan-500' },
                       { action: () => setShowAddRentModal('create'), icon: '💰', label: 'Rent', gradient: 'from-emerald-400 to-green-500' },
+                      { action: () => setShowAddExpenseModal('create'), icon: '💸', label: 'Expense', gradient: 'from-red-400 to-rose-500' },
                       { action: () => setShowAddDocumentModal('create'), icon: '📄', label: 'Document', gradient: 'from-amber-400 to-orange-500' },
                       { action: () => setShowSharedListModal('create'), icon: '📋', label: 'List', gradient: 'from-emerald-400 to-teal-500' },
-                      { action: () => setShowAddIdeaModal('create'), icon: '💡', label: 'Idea', gradient: 'from-yellow-400 to-amber-500' },
                     ].map((item, idx) => (
                       <button key={item.label} onClick={() => { setShowAddNewMenu(false); item.action(); }}
                         className="flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-xl hover:bg-white/10 transition active:scale-95"
@@ -1369,11 +1463,10 @@ export default function RainbowRentals() {
                   <div className="grid grid-cols-3 gap-3">
                     {[
                       { action: () => setShowAddTaskModal('create'), icon: '✅', label: 'Task', gradient: 'from-blue-400 to-indigo-500' },
-                      { action: () => setShowNewPropertyModal('create'), icon: '🏠', label: 'Property', gradient: 'from-teal-400 to-cyan-500' },
                       { action: () => setShowAddRentModal('create'), icon: '💰', label: 'Rent', gradient: 'from-emerald-400 to-green-500' },
+                      { action: () => setShowAddExpenseModal('create'), icon: '💸', label: 'Expense', gradient: 'from-red-400 to-rose-500' },
                       { action: () => setShowAddDocumentModal('create'), icon: '📄', label: 'Document', gradient: 'from-amber-400 to-orange-500' },
                       { action: () => setShowSharedListModal('create'), icon: '📋', label: 'List', gradient: 'from-emerald-400 to-teal-500' },
-                      { action: () => setShowAddIdeaModal('create'), icon: '💡', label: 'Idea', gradient: 'from-yellow-400 to-amber-500' },
                     ].map((item, idx) => {
                       const row = Math.floor(idx / 3);
                       const delay = (1 - row) * 0.04 + (idx % 3) * 0.015;

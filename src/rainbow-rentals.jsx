@@ -638,15 +638,31 @@ export default function RainbowRentals() {
                       <p className="text-2xl font-bold text-blue-400">{properties.filter(p => p.tenant && p.tenant.name).length}</p>
                       <p className="text-xs text-white/40">{properties.filter(p => p.tenant?.status === 'active').length} active</p>
                     </button>
-                    <button onClick={() => setActiveSection('rent')} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-4 text-left hover:bg-white/[0.08] transition cursor-pointer">
-                      <p className="text-white/40 text-xs mb-1">Monthly Rent Expected</p>
-                      <p className="text-2xl font-bold text-emerald-400">{formatCurrency(properties.reduce((sum, p) => sum + (p.tenant?.monthlyRent || p.monthlyRent || 0), 0))}</p>
-                    </button>
-                    <button onClick={() => setActiveSection('rent')} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-4 text-left hover:bg-white/[0.08] transition cursor-pointer">
-                      <p className="text-white/40 text-xs mb-1">Late Payments</p>
-                      <p className="text-2xl font-bold text-orange-400">{rentPayments.filter(r => r.status === 'late').length}</p>
-                      <p className="text-xs text-white/40">{rentPayments.filter(r => r.status === 'unpaid').length} unpaid</p>
-                    </button>
+                    {(() => {
+                      const currentYear = new Date().getFullYear().toString();
+                      const ytdRentCollected = rentPayments
+                        .filter(r => (r.status === 'paid' || r.status === 'partial') && (r.datePaid || r.month || '').startsWith(currentYear))
+                        .reduce((sum, r) => sum + (r.amount || 0), 0);
+                      const ytdIncome = transactions
+                        .filter(t => t.type === 'income' && (t.date || '').startsWith(currentYear))
+                        .reduce((sum, t) => sum + (t.amount || 0), 0) + ytdRentCollected;
+                      const ytdExpenses = transactions
+                        .filter(t => t.type === 'expense' && (t.date || '').startsWith(currentYear))
+                        .reduce((sum, t) => sum + (t.amount || 0), 0);
+                      const ytdProfit = ytdIncome - ytdExpenses;
+                      return (
+                        <>
+                          <button onClick={() => setActiveSection('rent')} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-4 text-left hover:bg-white/[0.08] transition cursor-pointer">
+                            <p className="text-white/40 text-xs mb-1">YTD Rent Collected</p>
+                            <p className="text-2xl font-bold text-emerald-400">{formatCurrency(ytdRentCollected)}</p>
+                          </button>
+                          <button onClick={() => setActiveSection('rent')} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-4 text-left hover:bg-white/[0.08] transition cursor-pointer">
+                            <p className="text-white/40 text-xs mb-1">YTD Profit / Loss</p>
+                            <p className={`text-2xl font-bold ${ytdProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{formatCurrency(ytdProfit)}</p>
+                          </button>
+                        </>
+                      );
+                    })()}
                   </div>
 
                   {/* Vacant properties alert */}

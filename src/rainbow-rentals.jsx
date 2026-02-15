@@ -539,8 +539,34 @@ export default function RainbowRentals() {
               </div>
               <div>
                 <h1 className="text-lg font-bold text-white leading-tight">Rainbow Reality</h1>
-                <p className="text-[10px] text-white/40 leading-tight">{currentUser}'s Dashboard</p>
+                <p className="text-[10px] text-white/40 leading-tight md:hidden">{currentUser}'s Dashboard</p>
               </div>
+              {/* Desktop nav tabs */}
+              <nav className="hidden md:flex items-center gap-1 ml-6">
+                {[
+                  { id: 'dashboard', label: 'Dashboard', emoji: '📊' },
+                  { id: 'rentals', label: 'Properties', emoji: '🏠' },
+                  { id: 'tenants', label: 'Tenants', emoji: '👤' },
+                  { id: 'rent', label: 'Rents', emoji: '💰' },
+                  { id: 'documents', label: 'Documents', emoji: '📄' },
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveSection(tab.id);
+                      if (tab.id === 'rentals') { setSelectedProperty(null); setPropertyViewMode('grid'); }
+                      setShowAddNewMenu(false);
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${
+                      activeSection === tab.id
+                        ? 'bg-white/15 text-white'
+                        : 'text-white/50 hover:text-white/80 hover:bg-white/[0.06]'
+                    }`}
+                  >
+                    <span className="mr-1.5">{tab.emoji}</span>{tab.label}
+                  </button>
+                ))}
+              </nav>
             </div>
             <div className="flex items-center gap-2">
               <button onClick={() => setShowSearch(!showSearch)} className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center hover:bg-white/20 transition">

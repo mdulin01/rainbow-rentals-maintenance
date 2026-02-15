@@ -6,7 +6,7 @@ export const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 // Authorized owner emails
 export const ownerEmails = [
   'mdulin@gmail.com',
-  'liam@placeholder.com', // TODO: Replace with Liam's actual email
+  'dulinliam@gmail.com',
 ];
 
 // Property types

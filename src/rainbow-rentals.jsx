@@ -844,6 +844,7 @@ export default function RainbowRentals() {
                             <PropertyCard
                               key={property.id}
                               property={property}
+                              documents={documents}
                               onViewDetails={() => setSelectedProperty(property)}
                               onEdit={() => setShowNewPropertyModal(property)}
                               onDelete={() => {
@@ -853,6 +854,7 @@ export default function RainbowRentals() {
                                   onConfirm: () => { deleteProperty(property.id); setConfirmDialog(null); },
                                 });
                               }}
+                              onViewDocument={(doc) => setViewingDocument(doc)}
                             />
                           ))}
                           {properties.length === 0 && (

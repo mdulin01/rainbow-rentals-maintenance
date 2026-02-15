@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { MoreVertical, MapPin, User, DollarSign, Calendar, Trash2, Edit3, Eye } from 'lucide-react';
+import { MoreVertical, MapPin, User, DollarSign, Calendar, Trash2, Edit3, Eye, FileText } from 'lucide-react';
 import { tenantStatuses } from '../../constants';
 
-const PropertyCard = ({ property, onEdit, onDelete, onViewDetails }) => {
+const PropertyCard = ({ property, onEdit, onDelete, onViewDetails, documents = [], onViewDocument }) => {
   const [showMenu, setShowMenu] = useState(false);
 
   const getStatusColor = (status) => {
@@ -26,17 +26,35 @@ const PropertyCard = ({ property, onEdit, onDelete, onViewDetails }) => {
 
   const daysLeft = getDaysUntilExpiration();
 
+  // Find lease document for this property
+  const leaseDoc = documents.find(
+    d => String(d.propertyId) === String(property.id) && d.type === 'lease' && d.fileUrl
+  );
+
+  const isRented = property.tenant?.name && property.tenant?.status === 'active';
+
   return (
     <div
-      className="relative bg-slate-700/50 border border-white/15 rounded-xl overflow-hidden hover:shadow-lg transition group cursor-pointer"
+      className="relative bg-slate-700/50 border border-white/15 rounded-xl hover:shadow-lg transition group cursor-pointer overflow-visible"
       onClick={() => onViewDetails(property)}
     >
       {/* Compact photo/gradient strip */}
-      <div className={`h-20 bg-gradient-to-br ${property.color || 'from-slate-600 to-slate-700'} flex items-center justify-center overflow-hidden`}>
+      <div className={`h-20 bg-gradient-to-br ${property.color || 'from-slate-600 to-slate-700'} flex items-center justify-center overflow-hidden relative rounded-t-xl`}>
         {property.photo ? (
           <img src={property.photo} alt={property.name} className="w-full h-full object-cover" />
         ) : (
           <div className="text-3xl opacity-60">{property.emoji || '🏠'}</div>
+        )}
+        {/* Rented badge */}
+        {isRented && (
+          <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-green-500/90 text-white text-[10px] font-bold rounded-md">
+            RENTED
+          </span>
+        )}
+        {!property.tenant?.name && (
+          <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-red-500/80 text-white text-[10px] font-bold rounded-md">
+            VACANT
+          </span>
         )}
       </div>
 
@@ -55,7 +73,7 @@ const PropertyCard = ({ property, onEdit, onDelete, onViewDetails }) => {
           </div>
 
           {/* 3-dot Menu */}
-          <div className="relative">
+          <div className="relative z-10">
             <button
               onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
               className="p-1 hover:bg-white/10 rounded-lg transition text-slate-400 hover:text-white"
@@ -64,26 +82,30 @@ const PropertyCard = ({ property, onEdit, onDelete, onViewDetails }) => {
             </button>
 
             {showMenu && (
-              <div className="absolute right-0 top-full mt-1 bg-slate-800/95 border border-white/15 rounded-xl shadow-xl z-50 min-w-max overflow-hidden">
-                <button
-                  onClick={(e) => { e.stopPropagation(); onEdit(property); setShowMenu(false); }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-slate-200 hover:bg-white/10 transition text-sm"
-                >
-                  <Edit3 className="w-3.5 h-3.5" /> Edit
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onViewDetails(property); setShowMenu(false); }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-slate-200 hover:bg-white/10 transition text-sm border-t border-white/10"
-                >
-                  <Eye className="w-3.5 h-3.5" /> View
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onDelete(property.id); setShowMenu(false); }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-red-400 hover:bg-red-500/10 transition text-sm border-t border-white/10"
-                >
-                  <Trash2 className="w-3.5 h-3.5" /> Delete
-                </button>
-              </div>
+              <>
+                {/* Click-away overlay */}
+                <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setShowMenu(false); }} />
+                <div className="absolute right-0 top-full mt-1 bg-slate-800 border border-white/15 rounded-xl shadow-2xl z-50 min-w-[120px]">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onEdit(property); setShowMenu(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-slate-200 hover:bg-white/10 transition text-sm"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" /> Edit
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onViewDetails(property); setShowMenu(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-slate-200 hover:bg-white/10 transition text-sm border-t border-white/10"
+                  >
+                    <Eye className="w-3.5 h-3.5" /> View
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onDelete(property.id); setShowMenu(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-red-400 hover:bg-red-500/10 transition text-sm border-t border-white/10"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Delete
+                  </button>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -93,19 +115,30 @@ const PropertyCard = ({ property, onEdit, onDelete, onViewDetails }) => {
           <div className="flex items-center gap-1.5 min-w-0">
             <User className="w-3 h-3 text-slate-400 flex-shrink-0" />
             {property.tenant?.name ? (
-              <>
-                <span className="text-white/80 truncate">{property.tenant.name}</span>
-                <span className={`px-1.5 py-0.5 rounded-full font-medium ${getStatusColor(property.tenant.status)}`}>
-                  {getStatusLabel(property.tenant.status)}
-                </span>
-              </>
+              <span className="text-white/80 truncate">{property.tenant.name}</span>
             ) : (
               <span className="text-slate-500 italic">Vacant</span>
             )}
           </div>
-          <div className="flex items-center gap-1 text-emerald-400 font-semibold flex-shrink-0 ml-2">
-            <DollarSign className="w-3 h-3" />
-            <span>{property.monthlyRent?.toLocaleString() || '0'}/mo</span>
+          <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+            {/* Lease doc icon */}
+            {leaseDoc && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onViewDocument) onViewDocument(leaseDoc);
+                  else window.open(leaseDoc.fileUrl, '_blank');
+                }}
+                className="p-0.5 text-blue-400 hover:text-blue-300 transition"
+                title="View Lease"
+              >
+                <FileText className="w-3.5 h-3.5" />
+              </button>
+            )}
+            <div className="flex items-center gap-0.5 text-emerald-400 font-semibold">
+              <DollarSign className="w-3 h-3" />
+              <span>{property.monthlyRent ? parseFloat(property.monthlyRent).toLocaleString() : '0'}/mo</span>
+            </div>
           </div>
         </div>
 

@@ -106,6 +106,29 @@ export function autoCreateRecurringExpenses(expenses) {
 }
 
 /**
+ * Strip undefined values from an object (Firestore rejects undefined).
+ * Replaces undefined with '' for strings or 0 for numbers.
+ */
+export function sanitizeForFirestore(obj) {
+  if (obj === null || obj === undefined) return null;
+  if (Array.isArray(obj)) return obj.map(sanitizeForFirestore);
+  if (typeof obj === 'object') {
+    const clean = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (value === undefined) {
+        clean[key] = '';  // Replace undefined with empty string
+      } else if (typeof value === 'object' && value !== null) {
+        clean[key] = sanitizeForFirestore(value);
+      } else {
+        clean[key] = value;
+      }
+    }
+    return clean;
+  }
+  return obj;
+}
+
+/**
  * Directly save expenses to Firestore. No refs, no indirection.
  * Returns true on success, false on failure.
  */
@@ -118,11 +141,13 @@ async function saveExpensesDirect(db, expenses, currentUser) {
     console.error('[expenses] saveExpensesDirect: refusing to save empty array');
     return false;
   }
+  // Sanitize: Firestore rejects undefined values
+  const cleanExpenses = sanitizeForFirestore(expenses);
   const saveId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  console.log('[expenses] saveExpensesDirect: saving', expenses.length, 'expenses, saveId:', saveId);
+  console.log('[expenses] saveExpensesDirect: saving', cleanExpenses.length, 'expenses, saveId:', saveId);
   try {
     await setDoc(doc(db, 'rentalData', 'expenses'), {
-      expenses: expenses,
+      expenses: cleanExpenses,
       lastUpdated: new Date().toISOString(),
       updatedBy: currentUser || 'unknown',
       saveId: saveId,

@@ -57,7 +57,7 @@ import { useProperties, getPropertyTenants } from './hooks/useProperties';
 import { useDocuments } from './hooks/useDocuments';
 import { useFinancials } from './hooks/useFinancials';
 import { useRent } from './hooks/useRent';
-import { useExpenses, autoCreateRecurringExpenses } from './hooks/useExpenses';
+import { useExpenses, autoCreateRecurringExpenses, sanitizeForFirestore } from './hooks/useExpenses';
 
 // Contexts
 import { SharedHubProvider } from './contexts/SharedHubContext';
@@ -461,15 +461,16 @@ export default function RainbowRentals() {
 
           console.log('[expenses] Auto-creation: writing', updated.length, 'expenses (added', newExpenses.length, ')');
 
+          const cleanUpdated = sanitizeForFirestore(updated);
           transaction.set(expensesDocRef, {
-            expenses: updated,
+            expenses: cleanUpdated,
             lastUpdated: new Date().toISOString(),
-            updatedBy: currentUser,
+            updatedBy: currentUser || 'unknown',
             saveId: saveId,
           }, { merge: true });
 
           // Update local state AFTER the transaction succeeds
-          setExpenses(updated);
+          setExpenses(cleanUpdated);
           showToast(`Auto-created ${newExpenses.length} recurring expense(s)`, 'success');
         });
       } catch (error) {

@@ -53,6 +53,7 @@ const AddDocumentModal = React.memo(({
       });
     }
     setFileError('');
+    setPendingFile(null);
   }, [document]);
 
   const handleInputChange = (e) => {
@@ -62,6 +63,8 @@ const AddDocumentModal = React.memo(({
       [name]: value,
     }));
   };
+
+  const [pendingFile, setPendingFile] = useState(null);
 
   const handleFileSelect = (file) => {
     setFileError('');
@@ -73,17 +76,13 @@ const AddDocumentModal = React.memo(({
       return;
     }
 
-    // For demo purposes, just store file name
-    // In production, you'd upload to storage (Firebase, etc.)
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setFormData(prev => ({
-        ...prev,
-        fileName: file.name,
-        fileUrl: e.target.result, // Data URL for demo
-      }));
-    };
-    reader.readAsDataURL(file);
+    // Store the raw File object for Firebase Storage upload
+    setPendingFile(file);
+    setFormData(prev => ({
+      ...prev,
+      fileName: file.name,
+      fileUrl: '', // Will be set after upload by parent
+    }));
   };
 
   const handleDrag = (e) => {
@@ -132,7 +131,7 @@ const AddDocumentModal = React.memo(({
       updatedAt: new Date().toISOString(),
     };
 
-    onSave(docData);
+    onSave(docData, pendingFile || null);
   };
 
   return (

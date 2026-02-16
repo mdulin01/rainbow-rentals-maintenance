@@ -1436,7 +1436,8 @@ export default function RainbowRentals() {
               let fileUrl = docData.fileUrl;
               if (file) {
                 const url = await handleDocumentFileUpload(file, docData);
-                if (url) fileUrl = url;
+                if (!url) return; // Upload failed, don't save
+                fileUrl = url;
               }
               const finalDoc = { ...docData, fileUrl };
               if (typeof showAddDocumentModal === 'object' && showAddDocumentModal.id) {

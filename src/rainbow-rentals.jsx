@@ -66,7 +66,7 @@ import BuildInfo from './components/BuildInfo';
 // Firebase imports
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, onSnapshot, runTransaction } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import heic2any from 'heic2any';
 
@@ -323,6 +323,11 @@ export default function RainbowRentals() {
       console.error('[expenses] Save called but no user! Expenses will NOT be persisted.');
       return;
     }
+    // SAFETY: Never overwrite Firestore with an empty array
+    if (!newExpenses || newExpenses.length === 0) {
+      console.error('[expenses] Save called with EMPTY array! Aborting to prevent data loss.');
+      return;
+    }
     const saveId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     expensesSaveIdRef.current = saveId;
     console.log('[expenses] Saving', newExpenses.length, 'expenses to Firestore (saveId:', saveId, ')');
@@ -446,27 +451,53 @@ export default function RainbowRentals() {
   }, [user]);
 
   // ========== AUTO-CREATE RECURRING EXPENSES ==========
+  // Uses a Firestore TRANSACTION to atomically read-modify-write.
+  // This eliminates the race condition where onSnapshot + setState + async save
+  // could overwrite each other and lose data.
   const autoCreateDoneRef = useRef(false);
   useEffect(() => {
     if (!user || expenses.length === 0 || autoCreateDoneRef.current) return;
-    // Delay to let Firestore snapshot fully settle
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
       if (autoCreateDoneRef.current) return;
       autoCreateDoneRef.current = true;
-      // Use functional update to avoid stale closure
-      setExpenses(prev => {
-        console.log('[expenses] Auto-creation running with', prev.length, 'existing expenses');
-        const newExpenses = autoCreateRecurringExpenses(prev);
-        if (newExpenses.length > 0) {
-          const updated = [...prev, ...newExpenses];
-          console.log('[expenses] Auto-created', newExpenses.length, 'new expenses, total now:', updated.length);
-          saveExpensesRef.current(updated);
+
+      try {
+        const expensesDocRef = doc(db, 'rentalData', 'expenses');
+        await runTransaction(db, async (transaction) => {
+          // Read the ACTUAL Firestore data (not React state — avoids stale closures)
+          const docSnap = await transaction.get(expensesDocRef);
+          const data = docSnap.exists() ? docSnap.data() : {};
+          const firestoreExpenses = data.expenses || [];
+
+          console.log('[expenses] Auto-creation: read', firestoreExpenses.length, 'expenses from Firestore');
+
+          const newExpenses = autoCreateRecurringExpenses(firestoreExpenses);
+          if (newExpenses.length === 0) {
+            console.log('[expenses] Auto-creation: no new expenses needed');
+            return; // Nothing to do — transaction aborts cleanly
+          }
+
+          const updated = [...firestoreExpenses, ...newExpenses];
+          const saveId = `${Date.now()}-auto`;
+          expensesSaveIdRef.current = saveId;
+
+          console.log('[expenses] Auto-creation: writing', updated.length, 'expenses (added', newExpenses.length, ')');
+
+          transaction.set(expensesDocRef, {
+            expenses: updated,
+            lastUpdated: new Date().toISOString(),
+            updatedBy: currentUser,
+            saveId: saveId,
+          }, { merge: true });
+
+          // Update local state AFTER the transaction succeeds
+          setExpenses(updated);
           showToast(`Auto-created ${newExpenses.length} recurring expense(s)`, 'success');
-          return updated;
-        }
-        return prev;
-      });
-    }, 1500);
+        });
+      } catch (error) {
+        console.error('[expenses] Auto-creation transaction FAILED:', error);
+      }
+    }, 2000);
     return () => clearTimeout(timer);
   }, [user, expenses.length > 0]);
 

@@ -430,15 +430,24 @@ export default function RainbowRentals() {
   const autoCreateDoneRef = useRef(false);
   useEffect(() => {
     if (!user || expenses.length === 0 || autoCreateDoneRef.current) return;
-    autoCreateDoneRef.current = true;
-    const newExpenses = autoCreateRecurringExpenses(expenses);
-    if (newExpenses.length > 0) {
-      const updated = [...expenses, ...newExpenses];
-      setExpenses(updated);
-      saveExpensesRef.current(updated);
-      showToast(`Auto-created ${newExpenses.length} recurring expense(s)`, 'success');
-    }
-  }, [user, expenses]);
+    // Delay slightly to let Firestore snapshot fully settle
+    const timer = setTimeout(() => {
+      if (autoCreateDoneRef.current) return;
+      autoCreateDoneRef.current = true;
+      // Use functional update to avoid stale closure
+      setExpenses(prev => {
+        const newExpenses = autoCreateRecurringExpenses(prev);
+        if (newExpenses.length > 0) {
+          const updated = [...prev, ...newExpenses];
+          saveExpensesRef.current(updated);
+          showToast(`Auto-created ${newExpenses.length} recurring expense(s)`, 'success');
+          return updated;
+        }
+        return prev;
+      });
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [user, expenses.length > 0]);
 
   // ========== PHOTO UPLOAD HELPER ==========
   const uploadPhoto = async (file, prefix = 'rentals') => {

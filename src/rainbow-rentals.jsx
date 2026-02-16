@@ -112,6 +112,7 @@ export default function RainbowRentals() {
   const [currentUser, setCurrentUser] = useState('Mike');
   const [isOwner, setIsOwner] = useState(false);
   const [showAddNewMenu, setShowAddNewMenu] = useState(false);
+  const [showMobileSectionDropdown, setShowMobileSectionDropdown] = useState(false);
 
   // Search
   const [showSearch, setShowSearch] = useState(false);
@@ -615,7 +616,6 @@ export default function RainbowRentals() {
     showAddRentModal || showAddExpenseModal || viewingDocument || selectedProperty;
 
   // Mobile section dropdown
-  const [showMobileSectionDropdown, setShowMobileSectionDropdown] = useState(false);
   const allSections = [
     { id: 'dashboard', label: 'Dashboard', emoji: '📊' },
     { id: 'rentals', label: 'Properties', emoji: '🏠' },

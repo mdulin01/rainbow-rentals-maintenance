@@ -702,53 +702,54 @@ export default function RainbowRentals() {
                 <div>
                   <h2 className="text-xl font-bold text-white mb-4">Dashboard</h2>
 
-                  {/* Summary tiles */}
-                  <div className="grid grid-cols-2 gap-3 mb-6">
-                    <button onClick={() => setActiveSection('rentals')} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-4 text-left hover:bg-white/[0.08] transition cursor-pointer">
-                      <p className="text-white/40 text-xs mb-1">Properties</p>
-                      <p className="text-2xl font-bold text-teal-400">{properties.length}</p>
-                      <p className="text-xs text-white/40">
-                        {activeProperties.length} occupied
-                        {vacantProperties.length > 0 && ` · ${vacantProperties.length} vacant`}
-                        {leaseExpiredProperties.length > 0 && ` · ${leaseExpiredProperties.length} expired`}
-                        {monthToMonthProperties.length > 0 && ` · ${monthToMonthProperties.length} m-t-m`}
-                      </p>
-                    </button>
-                    <button onClick={() => setActiveSection('tenants')} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-4 text-left hover:bg-white/[0.08] transition cursor-pointer">
-                      <p className="text-white/40 text-xs mb-1">Tenants</p>
-                      <p className="text-2xl font-bold text-blue-400">{properties.reduce((sum, p) => sum + getPropertyTenants(p).length, 0)}</p>
-                      <p className="text-xs text-white/40">{properties.reduce((sum, p) => sum + getPropertyTenants(p).filter(t => t.status === 'active').length, 0)} active</p>
-                    </button>
-                    {(() => {
-                      const currentYear = new Date().getFullYear().toString();
-                      const ytdRentCollected = rentPayments
-                        .filter(r => (r.status === 'paid' || r.status === 'partial') && (r.datePaid || r.month || '').startsWith(currentYear))
-                        .reduce((sum, r) => sum + (r.amount || 0), 0);
-                      const ytdIncome = transactions
-                        .filter(t => t.type === 'income' && (t.date || '').startsWith(currentYear))
-                        .reduce((sum, t) => sum + (t.amount || 0), 0) + ytdRentCollected;
-                      const ytdTransactionExpenses = transactions
-                        .filter(t => t.type === 'expense' && (t.date || '').startsWith(currentYear))
-                        .reduce((sum, t) => sum + (t.amount || 0), 0);
-                      const ytdExpenseRecords = expenses
-                        .filter(e => (e.date || '').startsWith(currentYear))
-                        .reduce((sum, e) => sum + (e.amount || 0), 0);
-                      const ytdExpenses = ytdTransactionExpenses + ytdExpenseRecords;
-                      const ytdProfit = ytdIncome - ytdExpenses;
-                      return (
-                        <>
-                          <button onClick={() => setActiveSection('rent')} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-4 text-left hover:bg-white/[0.08] transition cursor-pointer">
-                            <p className="text-white/40 text-xs mb-1">YTD Rent Collected</p>
-                            <p className="text-2xl font-bold text-emerald-400">{formatCurrency(ytdRentCollected)}</p>
-                          </button>
-                          <button onClick={() => setActiveSection('rent')} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-4 text-left hover:bg-white/[0.08] transition cursor-pointer">
-                            <p className="text-white/40 text-xs mb-1">YTD Profit / Loss</p>
-                            <p className={`text-2xl font-bold ${ytdProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{formatCurrency(ytdProfit)}</p>
-                          </button>
-                        </>
-                      );
-                    })()}
-                  </div>
+                  {/* Summary tiles — single row */}
+                  {(() => {
+                    const currentYear = new Date().getFullYear().toString();
+                    const currentMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+                    const monthRentCollected = rentPayments
+                      .filter(r => (r.status === 'paid' || r.status === 'partial') && (r.datePaid || r.month || '').startsWith(currentMonth))
+                      .reduce((sum, r) => sum + (r.amount || 0), 0);
+                    const totalMonthlyRent = properties.reduce((sum, p) => sum + (parseFloat(p.monthlyRent) || 0), 0);
+                    const ytdRentCollected = rentPayments
+                      .filter(r => (r.status === 'paid' || r.status === 'partial') && (r.datePaid || r.month || '').startsWith(currentYear))
+                      .reduce((sum, r) => sum + (r.amount || 0), 0);
+                    const ytdIncome = transactions
+                      .filter(t => t.type === 'income' && (t.date || '').startsWith(currentYear))
+                      .reduce((sum, t) => sum + (t.amount || 0), 0) + ytdRentCollected;
+                    const ytdTransactionExpenses = transactions
+                      .filter(t => t.type === 'expense' && (t.date || '').startsWith(currentYear))
+                      .reduce((sum, t) => sum + (t.amount || 0), 0);
+                    const ytdExpenseRecords = expenses
+                      .filter(e => e.isTemplate !== true && (e.date || '').startsWith(currentYear))
+                      .reduce((sum, e) => sum + (e.amount || 0), 0);
+                    const ytdExpenses = ytdTransactionExpenses + ytdExpenseRecords;
+                    const ytdProfit = ytdIncome - ytdExpenses;
+                    const openTasks = sharedTasks.filter(t => t.status !== 'done').length;
+                    const totalTasks = sharedTasks.length;
+                    return (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                        <button onClick={() => setActiveSection('rentals')} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-3 text-left hover:bg-white/[0.08] transition cursor-pointer">
+                          <p className="text-white/40 text-xs mb-1">Vacant</p>
+                          <p className={`text-2xl font-bold ${vacantProperties.length > 0 ? 'text-red-400' : 'text-emerald-400'}`}>{vacantProperties.length}</p>
+                          <p className="text-xs text-white/40">{properties.length} total</p>
+                        </button>
+                        <button onClick={() => setActiveSection('rent')} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-3 text-left hover:bg-white/[0.08] transition cursor-pointer">
+                          <p className="text-white/40 text-xs mb-1">Rent Collected</p>
+                          <p className="text-2xl font-bold text-emerald-400">{formatCurrency(monthRentCollected)}</p>
+                          <p className="text-xs text-white/40">of {formatCurrency(totalMonthlyRent)}</p>
+                        </button>
+                        <button onClick={() => setActiveSection('expenses')} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-3 text-left hover:bg-white/[0.08] transition cursor-pointer">
+                          <p className="text-white/40 text-xs mb-1">YTD Profit / Loss</p>
+                          <p className={`text-2xl font-bold ${ytdProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{formatCurrency(ytdProfit)}</p>
+                        </button>
+                        <button onClick={() => setActiveSection('dashboard')} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-3 text-left hover:bg-white/[0.08] transition cursor-pointer">
+                          <p className="text-white/40 text-xs mb-1">Tasks</p>
+                          <p className="text-2xl font-bold text-blue-400">{openTasks}</p>
+                          <p className="text-xs text-white/40">{openTasks} open · {totalTasks - openTasks} done</p>
+                        </button>
+                      </div>
+                    );
+                  })()}
 
                   {/* Property status alerts */}
                   {(vacantProperties.length > 0 || leaseExpiredProperties.length > 0 || expiringLeases.length > 0) && (

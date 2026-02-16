@@ -48,6 +48,7 @@ export const documentTypes = [
   { value: 'tax', label: 'Tax Document', emoji: '📊' },
   { value: 'inspection', label: 'Inspection', emoji: '🔍' },
   { value: 'permit', label: 'Permit', emoji: '📜' },
+  { value: 'condo-bylaws', label: 'Condo By Laws', emoji: '📑' },
   { value: 'photo', label: 'Photo/Evidence', emoji: '📸' },
   { value: 'other', label: 'Other', emoji: '📁' },
 ];

@@ -185,7 +185,11 @@ export default function ExpensesList({ expenses, properties, onAdd, onEdit, onDe
                       <span className="text-sm text-white/70">{exp.date ? formatDate(exp.date) : '—'}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-sm font-medium text-white">{exp.description || '—'}</span>
+                      <span className="text-sm font-medium text-white">
+                        {exp.description || '—'}
+                        {exp.recurring && <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 align-middle">🔄 {exp.recurringFrequency || 'recurring'}</span>}
+                        {exp.receiptPhoto && <span className="ml-1.5 text-[10px] text-white/30 align-middle">📸</span>}
+                      </span>
                       {exp.category === 'mileage' && exp.miles && (
                         <span className="text-xs text-white/40 block">🚗 {exp.miles} mi</span>
                       )}

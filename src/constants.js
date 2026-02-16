@@ -55,15 +55,23 @@ export const expenseCategories = [
   { value: 'repair', label: 'Repair', emoji: '🔧' },
   { value: 'insurance', label: 'Insurance', emoji: '🛡️' },
   { value: 'maintenance', label: 'Maintenance', emoji: '🔩' },
-  { value: 'purchase', label: 'Purchase', emoji: '🛒' },
   { value: 'mortgage', label: 'Mortgage', emoji: '🏦' },
   { value: 'utilities', label: 'Utilities', emoji: '💡' },
+  { value: 'internet', label: 'Internet', emoji: '📡' },
+  { value: 'software', label: 'Software', emoji: '💻' },
   { value: 'taxes', label: 'Property Taxes', emoji: '📊' },
-  { value: 'management', label: 'Management Fees', emoji: '👔' },
   { value: 'landscaping', label: 'Landscaping', emoji: '🌿' },
   { value: 'legal', label: 'Legal Fees', emoji: '⚖️' },
   { value: 'mileage', label: 'Mileage', emoji: '🚗' },
   { value: 'other', label: 'Other', emoji: '📋' },
+
+];
+
+// Recurring expense frequencies
+export const recurringFrequencies = [
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'quarterly', label: 'Quarterly' },
+  { value: 'annually', label: 'Annually' },
 ];
 
 // IRS standard mileage rate (2025/2026)

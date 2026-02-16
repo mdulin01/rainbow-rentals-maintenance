@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { X, Trash2 } from 'lucide-react';
-import { expenseCategories, MILEAGE_RATE } from '../../constants';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Trash2, ImagePlus, RefreshCw } from 'lucide-react';
+import { expenseCategories, recurringFrequencies, MILEAGE_RATE } from '../../constants';
 
-export default function AddExpenseModal({ expense, properties, onSave, onDelete, onClose }) {
+export default function AddExpenseModal({ expense, properties, onSave, onDelete, onClose, onUploadPhoto }) {
   const isEditing = expense && expense.id;
+  const fileInputRef = useRef(null);
 
   const [form, setForm] = useState({
     propertyId: '',
@@ -14,12 +15,16 @@ export default function AddExpenseModal({ expense, properties, onSave, onDelete,
     date: '',
     vendor: '',
     notes: '',
+    receiptPhoto: '',
+    recurring: false,
+    recurringFrequency: 'monthly',
     // Mileage-specific fields
     miles: '',
     tripFrom: '',
     tripTo: '',
   });
 
+  const [uploading, setUploading] = useState(false);
   const isMileage = form.category === 'mileage';
 
   useEffect(() => {
@@ -33,6 +38,9 @@ export default function AddExpenseModal({ expense, properties, onSave, onDelete,
         date: expense.date || '',
         vendor: expense.vendor || '',
         notes: expense.notes || '',
+        receiptPhoto: expense.receiptPhoto || '',
+        recurring: expense.recurring || false,
+        recurringFrequency: expense.recurringFrequency || 'monthly',
         miles: expense.miles || '',
         tripFrom: expense.tripFrom || '',
         tripTo: expense.tripTo || '',
@@ -50,6 +58,50 @@ export default function AddExpenseModal({ expense, properties, onSave, onDelete,
       propertyId,
       propertyName: prop ? `${prop.emoji || '🏠'} ${prop.name}` : '',
     }));
+  };
+
+  // Photo handling
+  const resizeImage = (file, maxWidth = 800) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ratio = Math.min(maxWidth / img.width, maxWidth / img.height, 1);
+          canvas.width = img.width * ratio;
+          canvas.height = img.height * ratio;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', 0.7));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handlePhotoPick = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+
+    if (onUploadPhoto) {
+      // Use Firebase Storage upload
+      setUploading(true);
+      try {
+        const url = await onUploadPhoto(file, `expenses/${Date.now()}_${file.name}`);
+        setForm(f => ({ ...f, receiptPhoto: url }));
+      } catch (err) {
+        // Fallback to base64
+        const dataUrl = await resizeImage(file);
+        setForm(f => ({ ...f, receiptPhoto: dataUrl }));
+      }
+      setUploading(false);
+    } else {
+      // Base64 fallback
+      const dataUrl = await resizeImage(file);
+      setForm(f => ({ ...f, receiptPhoto: dataUrl }));
+    }
   };
 
   // Auto-calculate mileage amount and description
@@ -72,7 +124,6 @@ export default function AddExpenseModal({ expense, properties, onSave, onDelete,
       const updated = { ...f, [field]: value };
       const from = field === 'tripFrom' ? value : f.tripFrom;
       const to = field === 'tripTo' ? value : f.tripTo;
-      // Only auto-set description if it's empty or was auto-generated
       const currentDesc = f.description;
       const prevAutoDesc = buildTripDescription(f.tripFrom, f.tripTo);
       if (!currentDesc || currentDesc === prevAutoDesc) {
@@ -95,6 +146,9 @@ export default function AddExpenseModal({ expense, properties, onSave, onDelete,
       tripFrom: isMileage ? form.tripFrom : undefined,
       tripTo: isMileage ? form.tripTo : undefined,
       description: form.description || (isMileage ? `Mileage: ${form.miles} mi` : ''),
+      receiptPhoto: form.receiptPhoto || '',
+      recurring: form.recurring || false,
+      recurringFrequency: form.recurring ? form.recurringFrequency : undefined,
     });
   };
 
@@ -127,6 +181,36 @@ export default function AddExpenseModal({ expense, properties, onSave, onDelete,
                 >{c.emoji} {c.label}</button>
               ))}
             </div>
+          </div>
+
+          {/* Recurring toggle */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setForm(f => ({ ...f, recurring: !f.recurring }))}
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition border ${
+                form.recurring
+                  ? 'bg-blue-500/20 border-blue-500/30 text-blue-300'
+                  : 'bg-white/[0.05] border-white/[0.08] text-white/40 hover:bg-white/10'
+              }`}
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Recurring
+            </button>
+            {form.recurring && (
+              <div className="flex gap-1.5">
+                {recurringFrequencies.map(f => (
+                  <button
+                    key={f.value}
+                    onClick={() => setForm(prev => ({ ...prev, recurringFrequency: f.value }))}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${
+                      form.recurringFrequency === f.value
+                        ? 'bg-blue-500/30 text-blue-300'
+                        : 'bg-white/[0.05] text-white/40 hover:bg-white/10'
+                    }`}
+                  >{f.label}</button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Mileage-specific fields */}
@@ -286,6 +370,51 @@ export default function AddExpenseModal({ expense, properties, onSave, onDelete,
                   placeholder="e.g., Home Depot, Plumber Co."
                   className="w-full px-3 py-2 bg-white/[0.05] border border-white/[0.08] rounded-xl text-sm text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50"
                 />
+              </div>
+
+              {/* Receipt Photo */}
+              <div>
+                <label className="text-xs text-white/40 mb-1 block">Receipt Photo</label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handlePhotoPick}
+                  className="hidden"
+                />
+                {form.receiptPhoto ? (
+                  <div className="relative">
+                    <img
+                      src={form.receiptPhoto}
+                      alt="Receipt"
+                      className="w-full max-h-40 object-cover rounded-xl border border-white/[0.08]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, receiptPhoto: '' }))}
+                      className="absolute top-2 right-2 p-1.5 bg-red-500/80 hover:bg-red-500 rounded-full transition text-white"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="w-full py-4 border-2 border-dashed border-white/[0.08] rounded-xl text-white/40 hover:text-white/60 hover:border-white/20 transition flex flex-col items-center gap-1.5 text-sm"
+                  >
+                    {uploading ? (
+                      <span className="text-xs text-white/50">Uploading...</span>
+                    ) : (
+                      <>
+                        <ImagePlus className="w-5 h-5" />
+                        <span>Tap to add receipt photo</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
 
               {/* Notes */}

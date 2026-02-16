@@ -1479,6 +1479,7 @@ export default function RainbowRentals() {
           <AddExpenseModal
             expense={typeof showAddExpenseModal === 'object' ? showAddExpenseModal : null}
             properties={properties}
+            onUploadPhoto={uploadPhoto}
             onSave={(expenseData) => {
               if (typeof showAddExpenseModal === 'object' && showAddExpenseModal.id) {
                 updateExpense(showAddExpenseModal.id, expenseData);

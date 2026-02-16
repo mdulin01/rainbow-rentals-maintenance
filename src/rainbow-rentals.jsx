@@ -848,7 +848,7 @@ export default function RainbowRentals() {
                             onHighlight={() => highlightTask(task.id)}
                             showToast={showToast}
                             currentUser={currentUser}
-                            getEventLabel={() => getPropertyName(task.linkedTo?.propertyId)}
+                            getLinkedLabel={(linked) => linked?.propertyId ? getPropertyName(linked.propertyId) : null}
                           />
                         ))}
                       {sharedTasks.filter(t => t.status !== 'done').filter(t => taskMatchesHorizon(t, hubTaskFilter)).length === 0 && (
@@ -964,7 +964,7 @@ export default function RainbowRentals() {
                               onHighlight={() => highlightTask(task.id)}
                               showToast={showToast}
                               currentUser={currentUser}
-                              getEventLabel={() => getPropertyName(task.linkedTo?.propertyId)}
+                              getLinkedLabel={(linked) => linked?.propertyId ? getPropertyName(linked.propertyId) : null}
                             />
                           ))}
                           {sharedTasks.filter(t => t.linkedTo?.propertyId).length === 0 && (

@@ -7,23 +7,27 @@ const AddTaskModal = React.memo(({
   onClose,
   onSave,
   editTask,
+  task,
   currentUser,
   trips,
   fitnessEvents,
-  partyEvents
+  partyEvents,
+  properties,
 }) => {
-  // Initialize form data from editTask if provided, otherwise empty
-  const [formData, setFormData] = useState(editTask ? {
-    title: editTask.title || '',
-    description: editTask.description || '',
-    url: editTask.url || '',
-    image: editTask.image || '',
-    timeHorizon: editTask.timeHorizon || 'today',
-    dueDate: editTask.dueDate || '',
-    assignedTo: editTask.assignedTo || 'Mike',
-    priority: editTask.priority || 'medium',
-    linkedTo: editTask.linkedTo || null,
-    tags: editTask.tags ? editTask.tags.join(', ') : '',
+  // Support both prop names (editTask or task) for backward compat
+  const existingTask = editTask || (task && task.id ? task : null);
+  // Initialize form data from existingTask if provided, otherwise empty
+  const [formData, setFormData] = useState(existingTask ? {
+    title: existingTask.title || '',
+    description: existingTask.description || '',
+    url: existingTask.url || '',
+    image: existingTask.image || '',
+    timeHorizon: existingTask.timeHorizon || 'today',
+    dueDate: existingTask.dueDate || '',
+    assignedTo: existingTask.assignedTo || 'Mike',
+    priority: existingTask.priority || 'medium',
+    linkedTo: existingTask.linkedTo || null,
+    tags: existingTask.tags ? existingTask.tags.join(', ') : '',
   } : {
     title: '',
     description: '',
@@ -85,7 +89,7 @@ const AddTaskModal = React.memo(({
   const handleDragOver = (e) => { e.preventDefault(); setDragActive(true); };
   const handleDragLeave = () => setDragActive(false);
 
-  const isEditing = !!editTask;
+  const isEditing = !!existingTask;
 
   const updateField = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -129,7 +133,7 @@ const AddTaskModal = React.memo(({
 
     // Build the task object
     const task = {
-      id: editTask?.id || Date.now(),
+      id: existingTask?.id || Date.now(),
       title: formData.title.trim(),
       description: formData.description.trim(),
       url: formData.url.trim(),
@@ -143,9 +147,9 @@ const AddTaskModal = React.memo(({
         .split(',')
         .map(tag => tag.trim())
         .filter(tag => tag.length > 0),
-      status: editTask?.status || 'pending',
+      status: existingTask?.status || 'pending',
       createdBy: currentUser,
-      createdAt: editTask?.createdAt || new Date().toISOString(),
+      createdAt: existingTask?.createdAt || new Date().toISOString(),
     };
 
     onSave(task);
@@ -154,6 +158,17 @@ const AddTaskModal = React.memo(({
   // Get all available sections for linking
   const getSectionOptions = () => {
     const options = [];
+
+    // Add properties
+    if (properties && properties.length > 0) {
+      properties.forEach(prop => {
+        options.push({
+          label: `${prop.emoji || '🏠'} ${prop.name}`,
+          value: String(prop.id),
+          section: 'property',
+        });
+      });
+    }
 
     // Add trips
     if (trips && trips.length > 0) {
@@ -192,8 +207,10 @@ const AddTaskModal = React.memo(({
   };
 
   const sectionOptions = getSectionOptions();
+  // Support both linkedTo.itemId and linkedTo.propertyId for backward compat
+  const linkedItemId = formData.linkedTo?.itemId || formData.linkedTo?.propertyId || '';
   const currentLinkedSection = formData.linkedTo
-    ? sectionOptions.find(opt => opt.value === formData.linkedTo.itemId)
+    ? sectionOptions.find(opt => String(opt.value) === String(linkedItemId))
     : null;
 
   const getPriorityColor = (priority) => {
@@ -439,23 +456,28 @@ const AddTaskModal = React.memo(({
             </div>
           </div>
 
-          {/* Link to Section */}
+          {/* Link to Property */}
           {sectionOptions.length > 0 && (
             <div>
               <label className="block text-sm font-medium text-white/70 mb-2 flex items-center gap-2">
                 <Link className="w-4 h-4" />
-                Link to Section
+                Link to Property
               </label>
               <select
-                value={formData.linkedTo?.itemId || ''}
+                value={linkedItemId}
                 onChange={(e) => {
                   if (e.target.value) {
                     const selected = sectionOptions.find(opt => String(opt.value) === e.target.value);
                     if (selected) {
-                      updateField('linkedTo', {
+                      const linked = {
                         section: selected.section,
                         itemId: selected.value,
-                      });
+                      };
+                      // For properties, also set propertyId for backward compat
+                      if (selected.section === 'property') {
+                        linked.propertyId = selected.value;
+                      }
+                      updateField('linkedTo', linked);
                     }
                   } else {
                     updateField('linkedTo', null);

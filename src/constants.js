@@ -16,7 +16,8 @@ export const propertyTypes = [
   { value: 'condo', label: 'Condo', emoji: '🏢' },
   { value: 'apartment', label: 'Apartment', emoji: '🏬' },
   { value: 'townhouse', label: 'Townhouse', emoji: '🏡' },
-  { value: 'commercial', label: 'Commercial', emoji: '🏪' },
+  { value: 'duplex', label: 'Duplex', emoji: '🏚️' },
+  { value: 'mobile-home', label: 'Mobile Home', emoji: '🏕️' },
 ];
 
 // Tenant status options
@@ -30,6 +31,7 @@ export const tenantStatuses = [
 // Property status options
 export const propertyStatuses = [
   { value: 'occupied', label: 'Occupied', color: 'text-green-400', bg: 'bg-green-500/90' },
+  { value: 'owner-occupied', label: 'Owner Occupied', color: 'text-teal-400', bg: 'bg-teal-500/90' },
   { value: 'vacant', label: 'Vacant', color: 'text-red-400', bg: 'bg-red-500/80' },
   { value: 'lease-expired', label: 'Lease Expired', color: 'text-orange-400', bg: 'bg-orange-500/80' },
   { value: 'month-to-month', label: 'Month-to-Month', color: 'text-blue-400', bg: 'bg-blue-500/80' },

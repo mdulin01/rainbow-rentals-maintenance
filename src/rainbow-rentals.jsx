@@ -611,10 +611,12 @@ export default function RainbowRentals() {
 
   // Filter properties by status - use propertyStatus if set, otherwise derive from tenant
   const getEffectiveStatus = (p) => p.propertyStatus || (getPropertyTenants(p).length > 0 ? 'occupied' : 'vacant');
+  // "owner-occupied" counts as occupied/rented for dashboard purposes
+  const isOccupiedStatus = (s) => ['occupied', 'owner-occupied', 'lease-expired', 'month-to-month'].includes(s);
   const vacantProperties = properties.filter(p => getEffectiveStatus(p) === 'vacant');
   const renovationProperties = properties.filter(p => getEffectiveStatus(p) === 'renovation');
   const notCollectingRent = properties.filter(p => ['vacant', 'renovation'].includes(getEffectiveStatus(p)));
-  const activeProperties = properties.filter(p => getEffectiveStatus(p) === 'occupied');
+  const activeProperties = properties.filter(p => ['occupied', 'owner-occupied'].includes(getEffectiveStatus(p)));
   const leaseExpiredProperties = properties.filter(p => getEffectiveStatus(p) === 'lease-expired');
   const monthToMonthProperties = properties.filter(p => getEffectiveStatus(p) === 'month-to-month');
 
@@ -1033,8 +1035,15 @@ export default function RainbowRentals() {
                               <p className="text-3xl font-bold text-green-400">{activeProperties.length}</p>
                             </div>
                             <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-4">
-                              <p className="text-white/40 text-xs mb-1">Vacant</p>
-                              <p className="text-3xl font-bold text-red-400">{vacantProperties.length}</p>
+                              <p className="text-white/40 text-xs mb-1">Not Collecting Rent</p>
+                              <p className="text-3xl font-bold text-red-400">{notCollectingRent.length}</p>
+                              {(vacantProperties.length > 0 || renovationProperties.length > 0) && (
+                                <p className="text-white/30 text-xs mt-1">
+                                  {vacantProperties.length > 0 && `${vacantProperties.length} vacant`}
+                                  {vacantProperties.length > 0 && renovationProperties.length > 0 && ' · '}
+                                  {renovationProperties.length > 0 && `${renovationProperties.length} renovation`}
+                                </p>
+                              )}
                             </div>
                             <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-4">
                               <p className="text-white/40 text-xs mb-1">Monthly Rent</p>

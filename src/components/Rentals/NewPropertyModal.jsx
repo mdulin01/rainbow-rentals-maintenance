@@ -362,6 +362,76 @@ const NewPropertyModal = ({ property, onSave, onClose }) => {
             </div>
           </div>
 
+          {/* HOA Information */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-semibold">HOA Information</h3>
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({
+                  ...prev,
+                  hasHoa: !prev.hasHoa,
+                  ...(!prev.hasHoa ? {} : { hoaName: '', hoaWebsite: '', hoaPhone: '', hoaEmail: '' })
+                }))}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition border ${
+                  formData.hasHoa
+                    ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300'
+                    : 'bg-white/[0.05] border-white/[0.08] text-white/40 hover:bg-white/10'
+                }`}
+              >
+                {formData.hasHoa ? 'Has HOA' : 'No HOA'}
+              </button>
+            </div>
+            {formData.hasHoa && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-400 text-sm mb-2">HOA Name</label>
+                  <input
+                    type="text"
+                    name="hoaName"
+                    value={formData.hoaName || ''}
+                    onChange={handleChange}
+                    placeholder="e.g., Sunset Hills HOA"
+                    className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-white/30 transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 text-sm mb-2">Website</label>
+                  <input
+                    type="url"
+                    name="hoaWebsite"
+                    value={formData.hoaWebsite || ''}
+                    onChange={handleChange}
+                    placeholder="https://example-hoa.com"
+                    className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-white/30 transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 text-sm mb-2">Phone</label>
+                  <input
+                    type="tel"
+                    name="hoaPhone"
+                    value={formData.hoaPhone || ''}
+                    onChange={handleChange}
+                    placeholder="(555) 123-4567"
+                    className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-white/30 transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 text-sm mb-2">Email</label>
+                  <input
+                    type="email"
+                    name="hoaEmail"
+                    value={formData.hoaEmail || ''}
+                    onChange={handleChange}
+                    placeholder="contact@hoa.com"
+                    className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-white/30 transition"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Notes */}
           <div>
             <label className="block text-slate-400 text-sm mb-2">Notes</label>

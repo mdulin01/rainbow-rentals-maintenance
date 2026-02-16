@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Edit3, MapPin, User, DollarSign, Calendar, Phone, Mail, FileText, Image, Trash2, Plus, Lightbulb, X } from 'lucide-react';
+import { ArrowLeft, Edit3, MapPin, User, DollarSign, Calendar, Phone, Mail, FileText, Image, Trash2, Plus, Lightbulb, X, Globe, Building2 } from 'lucide-react';
 import { tenantStatuses } from '../../constants';
 import { getPropertyTenants } from '../../hooks/useProperties';
 
@@ -215,6 +215,56 @@ const PropertyDetail = ({ property, onBack, onEdit, onDelete, onEditTenant, onAd
                 </div>
               )}
             </div>
+
+            {/* HOA Information */}
+            {property.hasHoa && (property.hoaName || property.hoaWebsite || property.hoaPhone || property.hoaEmail) && (
+              <div className="bg-slate-800/50 border border-white/15 rounded-xl p-6">
+                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  <Building2 className="w-5 h-5" />
+                  HOA
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {property.hoaName && (
+                    <div>
+                      <p className="text-slate-400 text-sm mb-1">Name</p>
+                      <p className="text-white font-medium">{property.hoaName}</p>
+                    </div>
+                  )}
+                  {property.hoaWebsite && (
+                    <div>
+                      <p className="text-slate-400 text-sm mb-1">Website</p>
+                      <a
+                        href={property.hoaWebsite.startsWith('http') ? property.hoaWebsite : `https://${property.hoaWebsite}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 transition font-medium"
+                      >
+                        <Globe className="w-3.5 h-3.5" />
+                        {property.hoaWebsite.replace(/^https?:\/\//, '')}
+                      </a>
+                    </div>
+                  )}
+                  {property.hoaPhone && (
+                    <div>
+                      <p className="text-slate-400 text-sm mb-1">Phone</p>
+                      <a href={`tel:${property.hoaPhone}`} className="flex items-center gap-1.5 text-white/70 hover:text-white transition">
+                        <Phone className="w-3.5 h-3.5" />
+                        {property.hoaPhone}
+                      </a>
+                    </div>
+                  )}
+                  {property.hoaEmail && (
+                    <div>
+                      <p className="text-slate-400 text-sm mb-1">Email</p>
+                      <a href={`mailto:${property.hoaEmail}`} className="flex items-center gap-1.5 text-white/70 hover:text-white transition">
+                        <Mail className="w-3.5 h-3.5" />
+                        {property.hoaEmail}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Notes */}
             {property.notes && (

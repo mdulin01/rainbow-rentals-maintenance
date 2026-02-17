@@ -14,6 +14,7 @@ export default function ExpensesList({ expenses, properties, onAdd, onEdit, onDe
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [propertyFilter, setPropertyFilter] = useState('all');
+  const [yearFilter, setYearFilter] = useState('all');
   const [sortCol, setSortCol] = useState('date');
   const [sortDir, setSortDir] = useState('desc');
 
@@ -21,11 +22,22 @@ export default function ExpensesList({ expenses, properties, onAdd, onEdit, onDe
   const templates = useMemo(() => expenses.filter(e => e.isTemplate === true), [expenses]);
   const regularExpenses = useMemo(() => expenses.filter(e => e.isTemplate !== true), [expenses]);
 
+  // Available years from data
+  const availableYears = useMemo(() => {
+    const years = new Set();
+    regularExpenses.forEach(e => {
+      const d = e.date || '';
+      if (d.length >= 4) years.add(d.substring(0, 4));
+    });
+    return [...years].sort().reverse();
+  }, [regularExpenses]);
+
   // Filter (regular expenses only)
   const filtered = useMemo(() => {
     let result = [...regularExpenses];
     if (categoryFilter !== 'all') result = result.filter(e => e.category === categoryFilter);
     if (propertyFilter !== 'all') result = result.filter(e => e.propertyId === propertyFilter);
+    if (yearFilter !== 'all') result = result.filter(e => (e.date || '').startsWith(yearFilter));
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(e =>
@@ -36,7 +48,7 @@ export default function ExpensesList({ expenses, properties, onAdd, onEdit, onDe
       );
     }
     return result;
-  }, [regularExpenses, categoryFilter, propertyFilter, searchQuery]);
+  }, [regularExpenses, categoryFilter, propertyFilter, yearFilter, searchQuery]);
 
   // Sort
   const sorted = useMemo(() => {
@@ -289,6 +301,16 @@ export default function ExpensesList({ expenses, properties, onAdd, onEdit, onDe
           <option value="all">All Categories</option>
           {expenseCategories.map(c => (
             <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>
+          ))}
+        </select>
+        <select
+          value={yearFilter}
+          onChange={e => setYearFilter(e.target.value)}
+          className="px-3 py-2 bg-white/[0.05] border border-white/[0.08] rounded-xl text-sm text-white focus:outline-none focus:border-red-500/50"
+        >
+          <option value="all">All Years</option>
+          {availableYears.map(y => (
+            <option key={y} value={y}>{y}</option>
           ))}
         </select>
       </div>

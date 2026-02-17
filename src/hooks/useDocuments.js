@@ -10,7 +10,7 @@ export const useDocuments = (currentUser, saveDocuments, showToast) => {
   saveRef.current = saveDocuments;
 
   const [documents, setDocuments] = useState([]);
-  const [documentViewMode, setDocumentViewMode] = useState('all');
+  const [documentViewMode, setDocumentViewMode] = useState('byType');
   const [documentTypeFilter, setDocumentTypeFilter] = useState('all');
   const [documentPropertyFilter, setDocumentPropertyFilter] = useState('all');
   const [showAddDocumentModal, setShowAddDocumentModal] = useState(null);

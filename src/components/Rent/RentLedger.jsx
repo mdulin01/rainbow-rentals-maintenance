@@ -8,6 +8,7 @@ export default function RentLedger({ rentPayments, properties, onAdd, onEdit, on
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [propertyFilter, setPropertyFilter] = useState('all');
+  const [yearFilter, setYearFilter] = useState('all');
   const [sortCol, setSortCol] = useState('date');
   const [sortDir, setSortDir] = useState('desc');
 
@@ -24,11 +25,25 @@ export default function RentLedger({ rentPayments, properties, onAdd, onEdit, on
     return tenants.map(t => t.name).filter(Boolean).join(', ') || '—';
   };
 
+  // Available years from data
+  const availableYears = useMemo(() => {
+    const years = new Set();
+    rentPayments.forEach(r => {
+      const d = r.datePaid || r.month || '';
+      if (d.length >= 4) years.add(d.substring(0, 4));
+    });
+    return [...years].sort().reverse();
+  }, [rentPayments]);
+
   // Filter
   const filtered = useMemo(() => {
     let result = [...rentPayments];
     if (statusFilter !== 'all') result = result.filter(r => r.status === statusFilter);
     if (propertyFilter !== 'all') result = result.filter(r => r.propertyId === propertyFilter);
+    if (yearFilter !== 'all') result = result.filter(r => {
+      const d = r.datePaid || r.month || '';
+      return d.startsWith(yearFilter);
+    });
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(r =>
@@ -39,7 +54,7 @@ export default function RentLedger({ rentPayments, properties, onAdd, onEdit, on
       );
     }
     return result;
-  }, [rentPayments, statusFilter, propertyFilter, searchQuery]);
+  }, [rentPayments, statusFilter, propertyFilter, yearFilter, searchQuery]);
 
   // Sort
   const sorted = useMemo(() => {
@@ -48,7 +63,6 @@ export default function RentLedger({ rentPayments, properties, onAdd, onEdit, on
       switch (sortCol) {
         case 'tenant': return dir * (a.tenantName || '').localeCompare(b.tenantName || '');
         case 'property': return dir * (a.propertyName || '').localeCompare(b.propertyName || '');
-        case 'month': return dir * (a.month || '').localeCompare(b.month || '');
         case 'date': return dir * (a.datePaid || 'zzzz').localeCompare(b.datePaid || 'zzzz');
         case 'amount': return dir * ((a.amount || 0) - (b.amount || 0));
         case 'status': return dir * (a.status || '').localeCompare(b.status || '');
@@ -133,7 +147,7 @@ export default function RentLedger({ rentPayments, properties, onAdd, onEdit, on
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
           <input
             type="text"
-            placeholder="Search tenant, property, month..."
+            placeholder="Search tenant, property..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-2 bg-white/[0.05] border border-white/[0.08] rounded-xl text-sm text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50"
@@ -147,6 +161,16 @@ export default function RentLedger({ rentPayments, properties, onAdd, onEdit, on
           <option value="all">All Properties</option>
           {properties.map(p => (
             <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+        <select
+          value={yearFilter}
+          onChange={e => setYearFilter(e.target.value)}
+          className="px-3 py-2 bg-white/[0.05] border border-white/[0.08] rounded-xl text-sm text-white focus:outline-none focus:border-emerald-500/50"
+        >
+          <option value="all">All Years</option>
+          {availableYears.map(y => (
+            <option key={y} value={y}>{y}</option>
           ))}
         </select>
         <div className="flex gap-1.5">
@@ -173,8 +197,8 @@ export default function RentLedger({ rentPayments, properties, onAdd, onEdit, on
             <table className="w-full">
               <thead>
                 <tr className="border-b border-white/[0.08]">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-white/40 uppercase tracking-wide cursor-pointer hover:text-white/60" onClick={() => handleSort('month')}>
-                    Month <SortIcon col="month" />
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-white/40 uppercase tracking-wide cursor-pointer hover:text-white/60" onClick={() => handleSort('date')}>
+                    Date Paid <SortIcon col="date" />
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-white/40 uppercase tracking-wide cursor-pointer hover:text-white/60" onClick={() => handleSort('tenant')}>
                     Tenant <SortIcon col="tenant" />
@@ -184,9 +208,6 @@ export default function RentLedger({ rentPayments, properties, onAdd, onEdit, on
                   </th>
                   <th className="text-right px-4 py-3 text-xs font-semibold text-white/40 uppercase tracking-wide cursor-pointer hover:text-white/60" onClick={() => handleSort('amount')}>
                     Amount <SortIcon col="amount" />
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-white/40 uppercase tracking-wide cursor-pointer hover:text-white/60" onClick={() => handleSort('date')}>
-                    Date Paid <SortIcon col="date" />
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-white/40 uppercase tracking-wide cursor-pointer hover:text-white/60" onClick={() => handleSort('status')}>
                     Status <SortIcon col="status" />
@@ -201,7 +222,7 @@ export default function RentLedger({ rentPayments, properties, onAdd, onEdit, on
                     onClick={() => onEdit(payment)}
                   >
                     <td className="px-4 py-3">
-                      <span className="text-sm font-medium text-white">{payment.month || '—'}</span>
+                      <span className="text-sm font-medium text-white">{payment.datePaid ? formatDate(payment.datePaid) : '—'}</span>
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-sm text-white/70">{payment.tenantName || '—'}</span>
@@ -211,9 +232,6 @@ export default function RentLedger({ rentPayments, properties, onAdd, onEdit, on
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span className="text-sm font-medium text-emerald-400">{formatCurrency(payment.amount || 0)}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm text-white/70">{payment.datePaid ? formatDate(payment.datePaid) : '—'}</span>
                     </td>
                     <td className="px-4 py-3">{getStatusBadge(payment.status)}</td>
                   </tr>

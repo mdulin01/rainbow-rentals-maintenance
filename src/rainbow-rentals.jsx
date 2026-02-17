@@ -805,10 +805,30 @@ export default function RainbowRentals() {
                   {(() => {
                     const currentYear = new Date().getFullYear().toString();
                     const currentMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+                    const monthLabel = new Date().toLocaleString('en-US', { month: 'short' });
+
+                    // Rent collected this month — only from rented properties
+                    const rentedPropIds = new Set(
+                      properties
+                        .filter(p => ['occupied', 'owner-occupied', 'lease-expired', 'month-to-month'].includes(getEffectiveStatus(p)))
+                        .map(p => String(p.id))
+                    );
+                    const rentExpectedThisMonth = properties
+                      .filter(p => rentedPropIds.has(String(p.id)))
+                      .reduce((sum, p) => sum + (parseFloat(p.monthlyRent) || 0), 0);
                     const monthRentCollected = rentPayments
                       .filter(r => (r.status === 'paid' || r.status === 'partial') && (r.datePaid || r.month || '').startsWith(currentMonth))
                       .reduce((sum, r) => sum + (r.amount || 0), 0);
-                    const totalMonthlyRent = properties.reduce((sum, p) => sum + (parseFloat(p.monthlyRent) || 0), 0);
+                    const rentPct = rentExpectedThisMonth > 0 ? Math.round((monthRentCollected / rentExpectedThisMonth) * 100) : 100;
+                    // Properties that haven't paid this month
+                    const paidPropIds = new Set(
+                      rentPayments
+                        .filter(r => (r.status === 'paid' || r.status === 'partial') && (r.datePaid || r.month || '').startsWith(currentMonth))
+                        .map(r => String(r.propertyId))
+                    );
+                    const unpaidProps = properties.filter(p => rentedPropIds.has(String(p.id)) && !paidPropIds.has(String(p.id)));
+
+                    // YTD P&L
                     const ytdRentCollected = rentPayments
                       .filter(r => (r.status === 'paid' || r.status === 'partial') && (r.datePaid || r.month || '').startsWith(currentYear))
                       .reduce((sum, r) => sum + (r.amount || 0), 0);
@@ -827,24 +847,45 @@ export default function RainbowRentals() {
                     const totalTasks = sharedTasks.length;
                     return (
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                        <button onClick={() => setActiveSection('rentals')} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-3 text-left hover:bg-white/[0.08] transition cursor-pointer">
-                          <p className="text-white/40 text-xs mb-1">Not Collecting Rent</p>
-                          <p className={`text-2xl font-bold ${notCollectingRent.length > 0 ? 'text-red-400' : 'text-emerald-400'}`}>{notCollectingRent.length}</p>
-                          <p className="text-xs text-white/40">{vacantProperties.length > 0 ? `${vacantProperties.length} vacant` : ''}{vacantProperties.length > 0 && renovationProperties.length > 0 ? ' · ' : ''}{renovationProperties.length > 0 ? `${renovationProperties.length} reno` : ''}{notCollectingRent.length === 0 ? 'All collecting' : ''}</p>
-                        </button>
-                        <button onClick={() => setActiveSection('rent')} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-3 text-left hover:bg-white/[0.08] transition cursor-pointer">
-                          <p className="text-white/40 text-xs mb-1">Rent Collected</p>
-                          <p className="text-2xl font-bold text-emerald-400">{formatCurrency(monthRentCollected)}</p>
-                          <p className="text-xs text-white/40">of {formatCurrency(totalMonthlyRent)}</p>
-                        </button>
-                        <button onClick={() => setShowPropertyBreakdown(true)} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-3 text-left hover:bg-white/[0.08] transition cursor-pointer">
-                          <p className="text-white/40 text-xs mb-1">YTD Profit / Loss</p>
-                          <p className={`text-2xl font-bold ${ytdProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{formatCurrency(ytdProfit)}</p>
-                        </button>
+                        {/* 1. Tasks */}
                         <button onClick={() => setActiveSection('dashboard')} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-3 text-left hover:bg-white/[0.08] transition cursor-pointer">
                           <p className="text-white/40 text-xs mb-1">Tasks</p>
                           <p className="text-2xl font-bold text-blue-400">{openTasks}</p>
                           <p className="text-xs text-white/40">{openTasks} open · {totalTasks - openTasks} done</p>
+                        </button>
+                        {/* 2. Unrented */}
+                        <button onClick={() => setActiveSection('rentals')} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-3 text-left hover:bg-white/[0.08] transition cursor-pointer">
+                          <p className="text-white/40 text-xs mb-1">Unrented</p>
+                          <p className={`text-2xl font-bold ${notCollectingRent.length > 0 ? 'text-red-400' : 'text-emerald-400'}`}>{notCollectingRent.length}</p>
+                          {notCollectingRent.length > 0 ? (
+                            <div className="mt-1 space-y-0.5">
+                              {notCollectingRent.slice(0, 3).map(p => (
+                                <p key={p.id} className="text-[10px] text-white/40 truncate leading-tight">{p.emoji || '🏠'} {p.name}</p>
+                              ))}
+                              {notCollectingRent.length > 3 && <p className="text-[10px] text-white/30">+{notCollectingRent.length - 3} more</p>}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-white/40">All collecting</p>
+                          )}
+                        </button>
+                        {/* 3. Rent Collected (this month) */}
+                        <button onClick={() => setActiveSection('rent')} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-3 text-left hover:bg-white/[0.08] transition cursor-pointer">
+                          <p className="text-white/40 text-xs mb-1">{monthLabel} Rent</p>
+                          <p className={`text-2xl font-bold ${rentPct >= 100 ? 'text-emerald-400' : 'text-red-400'}`}>{formatCurrency(monthRentCollected)}</p>
+                          <p className={`text-xs ${rentPct >= 100 ? 'text-white/40' : 'text-red-400/70'}`}>of {formatCurrency(rentExpectedThisMonth)}</p>
+                          {unpaidProps.length > 0 && (
+                            <div className="mt-1 space-y-0.5">
+                              {unpaidProps.slice(0, 3).map(p => (
+                                <p key={p.id} className="text-[10px] text-red-400/60 truncate leading-tight">{p.emoji || '🏠'} {p.name}</p>
+                              ))}
+                              {unpaidProps.length > 3 && <p className="text-[10px] text-red-400/40">+{unpaidProps.length - 3} more</p>}
+                            </div>
+                          )}
+                        </button>
+                        {/* 4. YTD Profit / Loss */}
+                        <button onClick={() => setShowPropertyBreakdown(true)} className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-3 text-left hover:bg-white/[0.08] transition cursor-pointer">
+                          <p className="text-white/40 text-xs mb-1">YTD Profit / Loss</p>
+                          <p className={`text-2xl font-bold ${ytdProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{formatCurrency(ytdProfit)}</p>
                         </button>
                       </div>
                     );
@@ -1220,9 +1261,9 @@ export default function RainbowRentals() {
                   <div className="flex gap-1.5 mb-4 items-center justify-between sticky top-[57px] z-20 bg-slate-900/95 backdrop-blur-md py-3 -mx-4 px-4">
                     <div className="flex gap-1.5">
                       {[
-                        { id: 'all', emoji: '📄' },
-                        { id: 'byProperty', emoji: '🏠' },
                         { id: 'byType', emoji: '📁' },
+                        { id: 'byProperty', emoji: '🏠' },
+                        { id: 'all', emoji: '📄' },
                       ].map(tab => (
                         <button key={tab.id} onClick={() => setDocumentViewMode(tab.id)}
                           className={`px-3 md:px-4 py-2 rounded-xl font-medium transition text-base md:text-lg text-center ${

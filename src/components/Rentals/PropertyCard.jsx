@@ -71,12 +71,12 @@ const PropertyCard = ({ property, onEdit, onDelete, onViewDetails, documents = [
       className="bg-white/[0.03] border border-white/[0.08] rounded-2xl overflow-hidden hover:bg-white/[0.05] transition cursor-pointer group"
       onClick={() => onViewDetails()}
     >
+      {/* Color bar — spans full width */}
+      <div className={`h-1.5 bg-gradient-to-r ${property.color || 'from-teal-400 to-cyan-500'}`} />
+
       <div className="flex flex-col md:flex-row">
         {/* LEFT — Property Info */}
         <div className="md:w-[62%] flex flex-col">
-          {/* Color bar */}
-          <div className={`h-1.5 bg-gradient-to-r ${property.color || 'from-teal-400 to-cyan-500'}`} />
-
           <div className="flex items-start p-4 gap-3">
             {/* Photo thumbnail */}
             {property.photo ? (

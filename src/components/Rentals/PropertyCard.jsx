@@ -72,91 +72,7 @@ const PropertyCard = ({ property, onEdit, onDelete, onViewDetails, documents = [
       onClick={() => onViewDetails()}
     >
       <div className="flex flex-col md:flex-row">
-        {/* LEFT — Financial Analysis Panel */}
-        <div className="md:w-[38%] p-4 border-b md:border-b-0 md:border-r border-white/[0.08] bg-white/[0.02]">
-          {/* Cash Flow headline */}
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-white/40 text-[10px] uppercase tracking-wider font-semibold">Cash Flow</span>
-            <span className={`text-lg font-bold ${monthlyCashFlow >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-              {monthlyCashFlow >= 0 ? '+' : ''}{formatCur(monthlyCashFlow)}
-            </span>
-          </div>
-
-          {/* Income vs Costs breakdown */}
-          <div className="space-y-1 mb-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-white/50">Rent</span>
-              <span className="text-emerald-400 font-medium">{formatCur(monthlyRent)}</span>
-            </div>
-            {hasMortgageData && (
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-white/50">Mortgage</span>
-                <span className="text-red-400/70 font-medium">-{formatCur(mortgagePayment)}</span>
-              </div>
-            )}
-            {escrow > 0 && (
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-white/50">Escrow</span>
-                <span className="text-red-400/70 font-medium">-{formatCur(escrow)}</span>
-              </div>
-            )}
-            {avgMonthlyExpenses > 0 && (
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-white/50">Avg Expenses</span>
-                <span className="text-red-400/70 font-medium">-{formatCur(avgMonthlyExpenses)}</span>
-              </div>
-            )}
-          </div>
-
-          <div className="border-t border-white/[0.06] my-2" />
-
-          {/* Valuation + Mortgage compact grid */}
-          <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-            {purchasePrice > 0 && (
-              <div>
-                <p className="text-[10px] text-white/30">Purchase</p>
-                <p className="text-xs text-white/70 font-medium">{formatCur(purchasePrice)}</p>
-              </div>
-            )}
-            {currentValue > 0 && (
-              <div>
-                <p className="text-[10px] text-white/30">Value</p>
-                <p className="text-xs text-white/70 font-medium">
-                  {formatCur(currentValue)}
-                  {purchasePrice > 0 && (
-                    <span className={`ml-1 text-[10px] ${equityGain >= 0 ? 'text-emerald-400/70' : 'text-red-400/70'}`}>
-                      {equityGain >= 0 ? '▲' : '▼'}{Math.abs(equityPct)}%
-                    </span>
-                  )}
-                </p>
-              </div>
-            )}
-            {hasMortgageData && mortgageBalance > 0 && (
-              <div>
-                <p className="text-[10px] text-white/30">Loan Bal</p>
-                <p className="text-xs text-white/70 font-medium">{formatCur(mortgageBalance)}</p>
-              </div>
-            )}
-            {hasMortgageData && mortgageAPR > 0 && (
-              <div>
-                <p className="text-[10px] text-white/30">APR</p>
-                <p className="text-xs text-white/70 font-medium">{mortgageAPR}%</p>
-              </div>
-            )}
-          </div>
-
-          {/* YTD P&L */}
-          <div className="border-t border-white/[0.06] pt-2 mt-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-white/40">YTD P&L</span>
-              <span className={`font-bold ${ytdProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                {ytdProfit >= 0 ? '+' : ''}{formatCur(ytdProfit)}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT — Property Info */}
+        {/* LEFT — Property Info */}
         <div className="md:w-[62%] flex flex-col">
           {/* Color bar */}
           <div className={`h-1.5 bg-gradient-to-r ${property.color || 'from-teal-400 to-cyan-500'}`} />
@@ -244,6 +160,90 @@ const PropertyCard = ({ property, onEdit, onDelete, onViewDetails, documents = [
             <div className="flex items-center gap-0.5 text-emerald-400 font-semibold text-sm flex-shrink-0">
               <DollarSign className="w-3.5 h-3.5" />
               <span>{monthlyRent ? monthlyRent.toLocaleString() : '0'}/mo</span>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT — Financial Analysis Panel */}
+        <div className="md:w-[38%] p-4 border-t md:border-t-0 md:border-l border-white/[0.08] bg-white/[0.02]">
+          {/* Cash Flow headline */}
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-white/40 text-[10px] uppercase tracking-wider font-semibold">Cash Flow</span>
+            <span className={`text-lg font-bold ${monthlyCashFlow >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              {monthlyCashFlow >= 0 ? '+' : ''}{formatCur(monthlyCashFlow)}
+            </span>
+          </div>
+
+          {/* Income vs Costs breakdown */}
+          <div className="space-y-1 mb-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-white/50">Rent</span>
+              <span className="text-emerald-400 font-medium">{formatCur(monthlyRent)}</span>
+            </div>
+            {hasMortgageData && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-white/50">Mortgage</span>
+                <span className="text-red-400/70 font-medium">-{formatCur(mortgagePayment)}</span>
+              </div>
+            )}
+            {escrow > 0 && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-white/50">Escrow</span>
+                <span className="text-red-400/70 font-medium">-{formatCur(escrow)}</span>
+              </div>
+            )}
+            {avgMonthlyExpenses > 0 && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-white/50">Avg Expenses</span>
+                <span className="text-red-400/70 font-medium">-{formatCur(avgMonthlyExpenses)}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-white/[0.06] my-2" />
+
+          {/* Valuation + Mortgage compact grid */}
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+            {purchasePrice > 0 && (
+              <div>
+                <p className="text-[10px] text-white/30">Purchase</p>
+                <p className="text-xs text-white/70 font-medium">{formatCur(purchasePrice)}</p>
+              </div>
+            )}
+            {currentValue > 0 && (
+              <div>
+                <p className="text-[10px] text-white/30">Value</p>
+                <p className="text-xs text-white/70 font-medium">
+                  {formatCur(currentValue)}
+                  {purchasePrice > 0 && (
+                    <span className={`ml-1 text-[10px] ${equityGain >= 0 ? 'text-emerald-400/70' : 'text-red-400/70'}`}>
+                      {equityGain >= 0 ? '▲' : '▼'}{Math.abs(equityPct)}%
+                    </span>
+                  )}
+                </p>
+              </div>
+            )}
+            {hasMortgageData && mortgageBalance > 0 && (
+              <div>
+                <p className="text-[10px] text-white/30">Loan Bal</p>
+                <p className="text-xs text-white/70 font-medium">{formatCur(mortgageBalance)}</p>
+              </div>
+            )}
+            {hasMortgageData && mortgageAPR > 0 && (
+              <div>
+                <p className="text-[10px] text-white/30">APR</p>
+                <p className="text-xs text-white/70 font-medium">{mortgageAPR}%</p>
+              </div>
+            )}
+          </div>
+
+          {/* YTD P&L */}
+          <div className="border-t border-white/[0.06] pt-2 mt-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-white/40">YTD P&L</span>
+              <span className={`font-bold ${ytdProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {ytdProfit >= 0 ? '+' : ''}{formatCur(ytdProfit)}
+              </span>
             </div>
           </div>
         </div>

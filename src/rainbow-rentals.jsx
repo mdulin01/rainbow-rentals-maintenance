@@ -24,6 +24,10 @@ import TaskCard from './components/SharedHub/TaskCard';
 import ListCard from './components/SharedHub/ListCard';
 import IdeaCard from './components/SharedHub/IdeaCard';
 
+// Checklist components
+import ChecklistInitModal from './components/Checklists/ChecklistInitModal';
+import ChecklistDetailModal from './components/Checklists/ChecklistDetailModal';
+
 // Rentals components
 import PropertyCard from './components/Rentals/PropertyCard';
 import NewPropertyModal from './components/Rentals/NewPropertyModal';
@@ -196,6 +200,10 @@ export default function RainbowRentals() {
 
   // Document viewer
   const [viewingDocument, setViewingDocument] = useState(null);
+
+  // Checklist modals
+  const [showChecklistInitModal, setShowChecklistInitModal] = useState(null);
+  const [showChecklistDetailModal, setShowChecklistDetailModal] = useState(null);
 
   // ========== AUTH ==========
   useEffect(() => {
@@ -613,7 +621,8 @@ export default function RainbowRentals() {
   // Check if any modal is open (to hide nav)
   const anyModalOpen = showAddTaskModal || showSharedListModal || showAddIdeaModal ||
     showNewPropertyModal || showTenantModal || showAddDocumentModal || showAddTransactionModal ||
-    showAddRentModal || showAddExpenseModal || viewingDocument || selectedProperty;
+    showAddRentModal || showAddExpenseModal || viewingDocument || selectedProperty ||
+    showChecklistInitModal || showChecklistDetailModal;
 
   // Mobile section dropdown
   const allSections = [
@@ -888,6 +897,71 @@ export default function RainbowRentals() {
                       )}
                     </div>
                   )}
+
+                  {/* Active Move-In/Move-Out Checklists */}
+                  {(() => {
+                    const activeChecklists = sharedLists.filter(l =>
+                      (l.category === 'move-in' || l.category === 'move-out') && l.status !== 'archived'
+                    );
+                    if (activeChecklists.length === 0) return null;
+                    return (
+                      <div className="mb-6">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wide">Active Checklists</h3>
+                          <button onClick={() => setShowChecklistInitModal('create')} className="text-xs text-teal-400 hover:text-teal-300 font-medium">+ New</button>
+                        </div>
+                        <div className="space-y-2">
+                          {activeChecklists.map(list => {
+                            const checked = list.items?.filter(i => i.checked).length || 0;
+                            const total = list.items?.length || 0;
+                            const pct = total > 0 ? Math.round((checked / total) * 100) : 0;
+                            const propName = list.linkedTo?.itemId ? getPropertyName(list.linkedTo.itemId) : null;
+                            return (
+                              <button
+                                key={list.id}
+                                onClick={() => setShowChecklistDetailModal(list)}
+                                className="w-full bg-white/[0.05] border border-white/[0.08] rounded-2xl p-4 text-left hover:bg-white/[0.08] transition"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <span className="text-xl">{list.emoji}</span>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-semibold text-white truncate">{list.name}</div>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                      <span className="text-xs text-white/40">{checked}/{total} items</span>
+                                      {propName && (
+                                        <>
+                                          <span className="text-xs text-white/30">•</span>
+                                          <span className="text-xs text-teal-400">{propName}</span>
+                                        </>
+                                      )}
+                                      <span className="text-xs text-white/30">•</span>
+                                      {list.signature ? (
+                                        <span className="text-xs text-teal-400">✓ Signed</span>
+                                      ) : (
+                                        <span className="text-xs text-yellow-400">Needs signature</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  {/* Progress circle */}
+                                  <div className="shrink-0 w-10 h-10 relative">
+                                    <svg className="w-10 h-10 -rotate-90" viewBox="0 0 36 36">
+                                      <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="3" className="text-slate-700" />
+                                      <circle cx="18" cy="18" r="15" fill="none" strokeWidth="3"
+                                        strokeDasharray={`${(pct / 100) * 94.2} 94.2`}
+                                        strokeLinecap="round"
+                                        className={pct === 100 ? 'text-teal-400' : 'text-purple-400'}
+                                      />
+                                    </svg>
+                                    <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white/60">{pct}%</span>
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* To-Do List */}
                   <div className="mb-4">
@@ -1654,6 +1728,39 @@ export default function RainbowRentals() {
           />
         )}
 
+        {/* Checklist Init Modal */}
+        {showChecklistInitModal && (
+          <ChecklistInitModal
+            properties={properties}
+            currentUser={currentUser}
+            onCreateChecklist={(checklist) => {
+              addList(checklist);
+              setShowChecklistInitModal(null);
+              // Auto-open the detail modal for the new checklist
+              setShowChecklistDetailModal(checklist);
+            }}
+            onClose={() => setShowChecklistInitModal(null)}
+          />
+        )}
+
+        {/* Checklist Detail Modal */}
+        {showChecklistDetailModal && (
+          <ChecklistDetailModal
+            checklist={
+              // Always use latest data from sharedLists
+              sharedLists.find(l => l.id === (showChecklistDetailModal.id || showChecklistDetailModal)) || showChecklistDetailModal
+            }
+            onClose={() => setShowChecklistDetailModal(null)}
+            onToggleItem={toggleListItem}
+            onAddItem={addListItem}
+            onDeleteItem={deleteListItem}
+            onUpdateChecklist={updateList}
+            onUploadPhoto={uploadPhoto}
+            getPropertyName={getPropertyName}
+            currentUser={currentUser}
+          />
+        )}
+
         {/* Confirm Dialog */}
         {confirmDialog && (
           <ConfirmDialog
@@ -1689,7 +1796,8 @@ export default function RainbowRentals() {
                       { action: () => setShowAddRentModal('create'), icon: '💰', label: 'Rent', gradient: 'from-emerald-400 to-green-500' },
                       { action: () => setShowAddExpenseModal('create'), icon: '💸', label: 'Expense', gradient: 'from-red-400 to-rose-500' },
                       { action: () => setShowAddDocumentModal('create'), icon: '📄', label: 'Document', gradient: 'from-amber-400 to-orange-500' },
-                      { action: () => setShowSharedListModal('create'), icon: '📋', label: 'List', gradient: 'from-emerald-400 to-teal-500' },
+                      { action: () => setShowSharedListModal('create'), icon: '📝', label: 'List', gradient: 'from-emerald-400 to-teal-500' },
+                      { action: () => setShowChecklistInitModal('create'), icon: '📋', label: 'Checklist', gradient: 'from-purple-400 to-violet-500' },
                     ].map((item, idx) => (
                       <button key={item.label} onClick={() => { setShowAddNewMenu(false); item.action(); }}
                         className="flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-xl hover:bg-white/10 transition active:scale-95"
@@ -1731,7 +1839,8 @@ export default function RainbowRentals() {
                       { action: () => setShowAddRentModal('create'), icon: '💰', label: 'Rent', gradient: 'from-emerald-400 to-green-500' },
                       { action: () => setShowAddExpenseModal('create'), icon: '💸', label: 'Expense', gradient: 'from-red-400 to-rose-500' },
                       { action: () => setShowAddDocumentModal('create'), icon: '📄', label: 'Document', gradient: 'from-amber-400 to-orange-500' },
-                      { action: () => setShowSharedListModal('create'), icon: '📋', label: 'List', gradient: 'from-emerald-400 to-teal-500' },
+                      { action: () => setShowSharedListModal('create'), icon: '📝', label: 'List', gradient: 'from-emerald-400 to-teal-500' },
+                      { action: () => setShowChecklistInitModal('create'), icon: '📋', label: 'Checklist', gradient: 'from-purple-400 to-violet-500' },
                     ].map((item, idx) => {
                       const row = Math.floor(idx / 3);
                       const delay = (1 - row) * 0.04 + (idx % 3) * 0.015;

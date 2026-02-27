@@ -1,10 +1,11 @@
 import React, { useState, useRef } from 'react';
-import { Check, Plus, Trash2, ChevronDown, ChevronUp, Pencil, MoreVertical, Star, Share2 } from 'lucide-react';
+import { Check, Plus, Trash2, ChevronDown, ChevronUp, Pencil, MoreVertical, Star, Share2, PenTool } from 'lucide-react';
 import PortalMenu from './PortalMenu';
 import { useSharedHub } from '../../contexts/SharedHubContext';
 
-const ListCard = React.memo(({ list, currentUser, onNavigateToLinked, getLinkedLabel }) => {
+const ListCard = React.memo(({ list, currentUser, onNavigateToLinked, getLinkedLabel, onOpenChecklistDetail }) => {
   const { toggleListItem, addListItem, deleteListItem, deleteList, highlightList, setShowSharedListModal, showToast } = useSharedHub();
+  const isMoveChecklist = list.category === 'move-in' || list.category === 'move-out';
   const [expanded, setExpanded] = useState(false);
   const [newItemText, setNewItemText] = useState('');
   const [showMenu, setShowMenu] = useState(false);
@@ -48,7 +49,13 @@ const ListCard = React.memo(({ list, currentUser, onNavigateToLinked, getLinkedL
       {/* Header - tap to expand */}
       <div className="flex items-center">
         <button
-          onClick={() => setExpanded(!expanded)}
+          onClick={() => {
+            if (isMoveChecklist && onOpenChecklistDetail) {
+              onOpenChecklistDetail(list);
+            } else {
+              setExpanded(!expanded);
+            }
+          }}
           className="flex-1 flex items-center gap-3 p-4 text-left hover:bg-white/5 transition"
         >
           {list.highlighted && <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" />}
@@ -65,6 +72,18 @@ const ListCard = React.memo(({ list, currentUser, onNavigateToLinked, getLinkedL
                 <>
                   <span className="text-xs text-white/30">•</span>
                   <span className="text-xs text-teal-400">{linkedLabel}</span>
+                </>
+              )}
+              {isMoveChecklist && (
+                <>
+                  <span className="text-xs text-white/30">•</span>
+                  {list.signature ? (
+                    <span className="text-xs text-teal-400 flex items-center gap-0.5">
+                      <PenTool className="w-2.5 h-2.5" /> Signed
+                    </span>
+                  ) : (
+                    <span className="text-xs text-yellow-400">Needs signature</span>
+                  )}
                 </>
               )}
             </div>
@@ -101,10 +120,17 @@ const ListCard = React.memo(({ list, currentUser, onNavigateToLinked, getLinkedL
           </button>
           <PortalMenu anchorRef={menuRef} show={showMenu} onClose={() => setShowMenu(false)}>
             <button
-              onClick={() => { setShowMenu(false); setShowSharedListModal(list); }}
+              onClick={() => {
+                setShowMenu(false);
+                if (isMoveChecklist && onOpenChecklistDetail) {
+                  onOpenChecklistDetail(list);
+                } else {
+                  setShowSharedListModal(list);
+                }
+              }}
               className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-white hover:bg-slate-600 transition text-left"
             >
-              <Pencil className="w-3.5 h-3.5" /> Edit
+              <Pencil className="w-3.5 h-3.5" /> {isMoveChecklist ? 'Open Checklist' : 'Edit'}
             </button>
             <button
               onClick={() => { setShowMenu(false); highlightList(list.id); }}

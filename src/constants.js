@@ -125,6 +125,50 @@ export const listCategories = [
   { value: 'general', label: 'General', emoji: '📝' },
 ];
 
+// Move-in checklist template items (real estate best practices)
+export const MOVE_IN_TEMPLATE_ITEMS = [
+  { text: 'Lease agreement signed', icon: '📝' },
+  { text: 'Collect copy of renter ID (photo)', icon: '🪪' },
+  { text: 'Renters insurance proof collected', icon: '🛡️' },
+  { text: 'Security deposit received', icon: '💰' },
+  { text: 'First month rent received', icon: '💵' },
+  { text: 'Provide keys and entry codes', icon: '🔑' },
+  { text: 'Provide garage door opener / gate code', icon: '🚗' },
+  { text: 'Utilities transferred to renter name', icon: '💡' },
+  { text: 'Walk-through completed with tenant', icon: '🚶' },
+  { text: 'Property condition photos taken (move-in)', icon: '📸' },
+  { text: 'Smoke detectors tested and working', icon: '🔥' },
+  { text: 'Carbon monoxide detectors tested', icon: '⚠️' },
+  { text: 'Emergency contacts exchanged', icon: '📞' },
+  { text: 'Mailbox key / info provided', icon: '📬' },
+  { text: 'Trash / recycling schedule provided', icon: '🗑️' },
+  { text: 'Appliance instructions provided', icon: '🏠' },
+  { text: 'HOA rules reviewed (if applicable)', icon: '📋' },
+  { text: 'Maintenance request process explained', icon: '🔧' },
+];
+
+// Move-out checklist template items (real estate best practices)
+export const MOVE_OUT_TEMPLATE_ITEMS = [
+  { text: 'Written move-out notice received', icon: '📝' },
+  { text: 'Move-out date confirmed', icon: '📅' },
+  { text: 'Return all keys and entry devices', icon: '🔑' },
+  { text: 'Return garage door opener / gate remote', icon: '🚗' },
+  { text: 'Utilities transferred back to owner', icon: '💡' },
+  { text: 'Forwarding address collected', icon: '📬' },
+  { text: 'Final walk-through scheduled', icon: '🚶' },
+  { text: 'Final walk-through completed', icon: '✅' },
+  { text: 'Property condition photos taken (move-out)', icon: '📸' },
+  { text: 'Compare move-in vs move-out photos', icon: '🔍' },
+  { text: 'Document any damages beyond normal wear', icon: '📋' },
+  { text: 'Final rent payment confirmed', icon: '💵' },
+  { text: 'Outstanding charges calculated', icon: '🧮' },
+  { text: 'Security deposit disposition prepared', icon: '💰' },
+  { text: 'Security deposit returned / deductions sent', icon: '✉️' },
+  { text: 'Property cleaned and ready for next tenant', icon: '🧹' },
+  { text: 'Locks changed / re-keyed', icon: '🔒' },
+  { text: 'Listing updated (if re-renting)', icon: '📢' },
+];
+
 // Idea categories
 export const ideaCategories = [
   { value: 'improvement', label: 'Property Improvement', emoji: '🏗️' },

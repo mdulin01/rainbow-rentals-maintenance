@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { X, ChevronRight, Home } from 'lucide-react';
 import { MOVE_IN_TEMPLATE_ITEMS, MOVE_OUT_TEMPLATE_ITEMS } from '../../constants';
 
-const ChecklistInitModal = ({ onClose, onCreateChecklist, properties, currentUser }) => {
-  const [step, setStep] = useState(1); // 1 = pick type, 2 = pick property
-  const [checklistType, setChecklistType] = useState(null); // 'move-in' | 'move-out'
+const ChecklistInitModal = ({ onClose, onCreateChecklist, properties, currentUser, initialType }) => {
+  // If initialType is provided, skip straight to property selection
+  const [step, setStep] = useState(initialType ? 2 : 1);
+  const [checklistType, setChecklistType] = useState(initialType || null); // 'move-in' | 'move-out'
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
 
   const templateItems = checklistType === 'move-in' ? MOVE_IN_TEMPLATE_ITEMS : MOVE_OUT_TEMPLATE_ITEMS;
@@ -91,11 +92,13 @@ const ChecklistInitModal = ({ onClose, onCreateChecklist, properties, currentUse
 
           {step === 2 && (
             <div className="space-y-4">
-              {/* Back to type selection */}
-              <button onClick={() => setStep(1)}
-                className="text-xs text-teal-400 hover:text-teal-300 font-medium">
-                ← Back to type selection
-              </button>
+              {/* Back to type selection (only if type wasn't pre-selected) */}
+              {!initialType && (
+                <button onClick={() => setStep(1)}
+                  className="text-xs text-teal-400 hover:text-teal-300 font-medium">
+                  ← Back to type selection
+                </button>
+              )}
 
               {/* Type badge */}
               <div className="flex items-center gap-2 px-3 py-2 bg-teal-500/10 border border-teal-500/20 rounded-xl">

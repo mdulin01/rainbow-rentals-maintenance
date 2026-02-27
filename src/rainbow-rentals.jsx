@@ -810,6 +810,26 @@ export default function RainbowRentals() {
                 <div>
                   <h2 className="text-xl font-bold text-white mb-4">Dashboard</h2>
 
+                  {/* Move-In / Move-Out quick actions */}
+                  <div className="flex gap-3 mb-6">
+                    <button onClick={() => setShowChecklistInitModal('move-in')}
+                      className="flex-1 flex items-center gap-3 p-4 bg-purple-500/10 border border-purple-500/20 rounded-2xl hover:bg-purple-500/15 transition text-left group">
+                      <span className="text-2xl">📋</span>
+                      <div>
+                        <div className="text-sm font-semibold text-white">Move-In</div>
+                        <div className="text-[11px] text-white/40">New checklist</div>
+                      </div>
+                    </button>
+                    <button onClick={() => setShowChecklistInitModal('move-out')}
+                      className="flex-1 flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl hover:bg-amber-500/15 transition text-left group">
+                      <span className="text-2xl">📦</span>
+                      <div>
+                        <div className="text-sm font-semibold text-white">Move-Out</div>
+                        <div className="text-[11px] text-white/40">New checklist</div>
+                      </div>
+                    </button>
+                  </div>
+
                   {/* Outstanding rent card — only shows when rent is due */}
                   {(() => {
                     const currentMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
@@ -1733,6 +1753,7 @@ export default function RainbowRentals() {
           <ChecklistInitModal
             properties={properties}
             currentUser={currentUser}
+            initialType={showChecklistInitModal !== 'create' ? showChecklistInitModal : null}
             onCreateChecklist={(checklist) => {
               addList(checklist);
               setShowChecklistInitModal(null);
@@ -1795,9 +1816,9 @@ export default function RainbowRentals() {
                       { action: () => setShowAddTaskModal('create'), icon: '✅', label: 'Task', gradient: 'from-blue-400 to-indigo-500' },
                       { action: () => setShowAddRentModal('create'), icon: '💰', label: 'Rent', gradient: 'from-emerald-400 to-green-500' },
                       { action: () => setShowAddExpenseModal('create'), icon: '💸', label: 'Expense', gradient: 'from-red-400 to-rose-500' },
-                      { action: () => setShowAddDocumentModal('create'), icon: '📄', label: 'Document', gradient: 'from-amber-400 to-orange-500' },
                       { action: () => setShowSharedListModal('create'), icon: '📝', label: 'List', gradient: 'from-emerald-400 to-teal-500' },
-                      { action: () => setShowChecklistInitModal('create'), icon: '📋', label: 'Checklist', gradient: 'from-purple-400 to-violet-500' },
+                      { action: () => setShowChecklistInitModal('move-in'), icon: '📋', label: 'Move-In', gradient: 'from-purple-400 to-violet-500' },
+                      { action: () => setShowChecklistInitModal('move-out'), icon: '📦', label: 'Move-Out', gradient: 'from-amber-400 to-orange-500' },
                     ].map((item, idx) => (
                       <button key={item.label} onClick={() => { setShowAddNewMenu(false); item.action(); }}
                         className="flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-xl hover:bg-white/10 transition active:scale-95"
@@ -1838,9 +1859,9 @@ export default function RainbowRentals() {
                       { action: () => setShowAddTaskModal('create'), icon: '✅', label: 'Task', gradient: 'from-blue-400 to-indigo-500' },
                       { action: () => setShowAddRentModal('create'), icon: '💰', label: 'Rent', gradient: 'from-emerald-400 to-green-500' },
                       { action: () => setShowAddExpenseModal('create'), icon: '💸', label: 'Expense', gradient: 'from-red-400 to-rose-500' },
-                      { action: () => setShowAddDocumentModal('create'), icon: '📄', label: 'Document', gradient: 'from-amber-400 to-orange-500' },
                       { action: () => setShowSharedListModal('create'), icon: '📝', label: 'List', gradient: 'from-emerald-400 to-teal-500' },
-                      { action: () => setShowChecklistInitModal('create'), icon: '📋', label: 'Checklist', gradient: 'from-purple-400 to-violet-500' },
+                      { action: () => setShowChecklistInitModal('move-in'), icon: '📋', label: 'Move-In', gradient: 'from-purple-400 to-violet-500' },
+                      { action: () => setShowChecklistInitModal('move-out'), icon: '📦', label: 'Move-Out', gradient: 'from-amber-400 to-orange-500' },
                     ].map((item, idx) => {
                       const row = Math.floor(idx / 3);
                       const delay = (1 - row) * 0.04 + (idx % 3) * 0.015;

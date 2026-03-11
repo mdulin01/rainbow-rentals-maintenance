@@ -631,6 +631,7 @@ export default function RainbowRentals() {
     { id: 'tenants', label: 'Tenants', emoji: '👤' },
     { id: 'rent', label: 'Rent', emoji: '💰' },
     { id: 'expenses', label: 'Expenses', emoji: '💸' },
+    { id: 'action-items', label: 'Action Items', emoji: '✅' },
     { id: 'documents', label: 'Documents', emoji: '📄' },
   ];
   const activeSectionInfo = allSections.find(s => s.id === activeSection) || allSections[0];
@@ -732,6 +733,7 @@ export default function RainbowRentals() {
                   { id: 'tenants', label: 'Tenants', emoji: '👤' },
                   { id: 'rent', label: 'Rents', emoji: '💰' },
                   { id: 'expenses', label: 'Expenses', emoji: '💸' },
+                  { id: 'action-items', label: 'Action Items', emoji: '✅' },
                   { id: 'documents', label: 'Documents', emoji: '📄' },
                 ].map(tab => (
                   <button
@@ -810,25 +812,81 @@ export default function RainbowRentals() {
                 <div>
                   <h2 className="text-xl font-bold text-white mb-4">Dashboard</h2>
 
-                  {/* Move-In / Move-Out quick actions */}
-                  <div className="flex gap-3 mb-6">
-                    <button onClick={() => setShowChecklistInitModal('move-in')}
-                      className="flex-1 flex items-center gap-3 p-4 bg-purple-500/10 border border-purple-500/20 rounded-2xl hover:bg-purple-500/15 transition text-left group">
-                      <span className="text-2xl">📋</span>
-                      <div>
-                        <div className="text-sm font-semibold text-white">Move-In</div>
-                        <div className="text-[11px] text-white/40">New checklist</div>
+                  {/* Monthly & YTD Financial Summary */}
+                  {(() => {
+                    const now = new Date();
+                    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                    const currentYear = String(now.getFullYear());
+                    const monthName = now.toLocaleString('en-US', { month: 'long' });
+
+                    // Calculate rent income for current month
+                    const monthlyRentIncome = rentPayments
+                      .filter(r => (r.status === 'paid' || r.status === 'partial') && (r.datePaid || r.month || '').startsWith(currentMonth))
+                      .reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
+
+                    // Calculate rent income for YTD
+                    const ytdRentIncome = rentPayments
+                      .filter(r => (r.status === 'paid' || r.status === 'partial') && (r.datePaid || r.month || '').startsWith(currentYear))
+                      .reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
+
+                    // Calculate expenses for current month
+                    const monthlyExpenses = expenses
+                      .filter(e => !e.isTemplate && (e.date || '').startsWith(currentMonth))
+                      .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+
+                    // Calculate expenses for YTD
+                    const ytdExpenses = expenses
+                      .filter(e => !e.isTemplate && (e.date || '').startsWith(currentYear))
+                      .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+
+                    const monthlyNet = monthlyRentIncome - monthlyExpenses;
+                    const ytdNet = ytdRentIncome - ytdExpenses;
+
+                    return (
+                      <div className="grid grid-cols-2 gap-3 mb-6">
+                        {/* Monthly column */}
+                        <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-4">
+                          <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wide mb-3">{monthName}</h3>
+                          <div className="space-y-2.5">
+                            <div>
+                              <div className="text-[11px] text-white/40">Gross Income</div>
+                              <div className="text-lg font-bold text-emerald-400">{formatCurrency(monthlyRentIncome)}</div>
+                            </div>
+                            <div>
+                              <div className="text-[11px] text-white/40">Expenses</div>
+                              <div className="text-lg font-bold text-red-400">{formatCurrency(monthlyExpenses)}</div>
+                            </div>
+                            <div className="pt-2 border-t border-white/[0.08]">
+                              <div className="text-[11px] text-white/40">Net Income</div>
+                              <div className={`text-lg font-bold ${monthlyNet >= 0 ? 'text-teal-400' : 'text-red-400'}`}>
+                                {monthlyNet < 0 ? '-' : ''}{formatCurrency(Math.abs(monthlyNet))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        {/* YTD column */}
+                        <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-4">
+                          <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wide mb-3">{currentYear} YTD</h3>
+                          <div className="space-y-2.5">
+                            <div>
+                              <div className="text-[11px] text-white/40">Gross Income</div>
+                              <div className="text-lg font-bold text-emerald-400">{formatCurrency(ytdRentIncome)}</div>
+                            </div>
+                            <div>
+                              <div className="text-[11px] text-white/40">Expenses</div>
+                              <div className="text-lg font-bold text-red-400">{formatCurrency(ytdExpenses)}</div>
+                            </div>
+                            <div className="pt-2 border-t border-white/[0.08]">
+                              <div className="text-[11px] text-white/40">Net Income</div>
+                              <div className={`text-lg font-bold ${ytdNet >= 0 ? 'text-teal-400' : 'text-red-400'}`}>
+                                {ytdNet < 0 ? '-' : ''}{formatCurrency(Math.abs(ytdNet))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </button>
-                    <button onClick={() => setShowChecklistInitModal('move-out')}
-                      className="flex-1 flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl hover:bg-amber-500/15 transition text-left group">
-                      <span className="text-2xl">📦</span>
-                      <div>
-                        <div className="text-sm font-semibold text-white">Move-Out</div>
-                        <div className="text-[11px] text-white/40">New checklist</div>
-                      </div>
-                    </button>
-                  </div>
+                    );
+                  })()}
 
                   {/* Outstanding rent card — only shows when rent is due */}
                   {(() => {
@@ -918,140 +976,34 @@ export default function RainbowRentals() {
                     </div>
                   )}
 
-                  {/* Active Move-In/Move-Out Checklists */}
+                  {/* Quick link to Action Items if there are pending tasks or active checklists */}
                   {(() => {
                     const activeChecklists = sharedLists.filter(l =>
                       (l.category === 'move-in' || l.category === 'move-out') && l.status !== 'archived'
                     );
-                    if (activeChecklists.length === 0) return null;
+                    const pendingCount = sharedTasks.filter(t => t.status !== 'done').length;
+                    const checklistCount = activeChecklists.length;
+                    if (pendingCount === 0 && checklistCount === 0) return null;
                     return (
-                      <div className="mb-6">
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wide">Active Checklists</h3>
-                          <button onClick={() => setShowChecklistInitModal('create')} className="text-xs text-teal-400 hover:text-teal-300 font-medium">+ New</button>
+                      <button onClick={() => setActiveSection('action-items')}
+                        className="w-full bg-white/[0.05] border border-white/[0.08] rounded-2xl p-4 mb-6 text-left hover:bg-white/[0.08] transition">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="text-xl">✅</span>
+                            <div>
+                              <div className="text-sm font-semibold text-white">Action Items</div>
+                              <div className="text-[11px] text-white/40">
+                                {pendingCount > 0 && `${pendingCount} task${pendingCount !== 1 ? 's' : ''}`}
+                                {pendingCount > 0 && checklistCount > 0 && ' · '}
+                                {checklistCount > 0 && `${checklistCount} checklist${checklistCount !== 1 ? 's' : ''}`}
+                              </div>
+                            </div>
+                          </div>
+                          <ChevronDown className="w-4 h-4 text-white/30 -rotate-90" />
                         </div>
-                        <div className="space-y-2">
-                          {activeChecklists.map(list => {
-                            const checked = list.items?.filter(i => i.checked).length || 0;
-                            const total = list.items?.length || 0;
-                            const pct = total > 0 ? Math.round((checked / total) * 100) : 0;
-                            const propName = list.linkedTo?.itemId ? getPropertyName(list.linkedTo.itemId) : null;
-                            return (
-                              <button
-                                key={list.id}
-                                onClick={() => setShowChecklistDetailModal(list)}
-                                className="w-full bg-white/[0.05] border border-white/[0.08] rounded-2xl p-4 text-left hover:bg-white/[0.08] transition"
-                              >
-                                <div className="flex items-center gap-3">
-                                  <span className="text-xl">{list.emoji}</span>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="text-sm font-semibold text-white truncate">{list.name}</div>
-                                    <div className="flex items-center gap-2 mt-0.5">
-                                      <span className="text-xs text-white/40">{checked}/{total} items</span>
-                                      {propName && (
-                                        <>
-                                          <span className="text-xs text-white/30">•</span>
-                                          <span className="text-xs text-teal-400">{propName}</span>
-                                        </>
-                                      )}
-                                      <span className="text-xs text-white/30">•</span>
-                                      {list.signature ? (
-                                        <span className="text-xs text-teal-400">✓ Signed</span>
-                                      ) : (
-                                        <span className="text-xs text-yellow-400">Needs signature</span>
-                                      )}
-                                    </div>
-                                  </div>
-                                  {/* Progress circle */}
-                                  <div className="shrink-0 w-10 h-10 relative">
-                                    <svg className="w-10 h-10 -rotate-90" viewBox="0 0 36 36">
-                                      <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="3" className="text-slate-700" />
-                                      <circle cx="18" cy="18" r="15" fill="none" strokeWidth="3"
-                                        strokeDasharray={`${(pct / 100) * 94.2} 94.2`}
-                                        strokeLinecap="round"
-                                        className={pct === 100 ? 'text-teal-400' : 'text-purple-400'}
-                                      />
-                                    </svg>
-                                    <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white/60">{pct}%</span>
-                                  </div>
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
+                      </button>
                     );
                   })()}
-
-                  {/* To-Do List */}
-                  <div className="mb-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wide">To-Do List</h3>
-                      <button onClick={() => setShowAddTaskModal('create')} className="text-xs text-teal-400 hover:text-teal-300 font-medium">+ Add Task</button>
-                    </div>
-
-                    {/* Task filters + sort */}
-                    <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
-                      <div className="flex gap-1.5 flex-wrap">
-                        {timeHorizons.map(h => (
-                          <button key={h.value} onClick={() => setHubTaskFilter(h.value)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                              hubTaskFilter === h.value ? 'bg-teal-500 text-white' : 'bg-white/10 text-white/60 hover:bg-white/20'
-                            }`}>{h.label}</button>
-                        ))}
-                      </div>
-                      <div className="flex gap-1.5">
-                        <button onClick={() => setHubTaskSort('priority')}
-                          className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition ${
-                            hubTaskSort === 'priority' ? 'bg-white/20 text-white' : 'bg-white/5 text-white/40 hover:bg-white/10'
-                          }`}>Priority</button>
-                        <button onClick={() => setHubTaskSort('date')}
-                          className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition ${
-                            hubTaskSort === 'date' ? 'bg-white/20 text-white' : 'bg-white/5 text-white/40 hover:bg-white/10'
-                          }`}>Due Date</button>
-                      </div>
-                    </div>
-
-                    {/* Task list */}
-                    <div className="space-y-2">
-                      {sharedTasks
-                        .filter(t => t.status !== 'done')
-                        .filter(t => taskMatchesHorizon(t, hubTaskFilter))
-                        .sort((a, b) => {
-                          if (hubTaskSort === 'date') {
-                            // Sort by due date first, then priority
-                            const da = a.dueDate || '9999';
-                            const db = b.dueDate || '9999';
-                            if (da !== db) return da.localeCompare(db);
-                            const pOrder = { high: 0, medium: 1, low: 2 };
-                            return (pOrder[a.priority] ?? 2) - (pOrder[b.priority] ?? 2);
-                          } else {
-                            // Sort by priority first, then due date
-                            const pOrder = { high: 0, medium: 1, low: 2 };
-                            const pa = pOrder[a.priority] ?? 2;
-                            const pb = pOrder[b.priority] ?? 2;
-                            if (pa !== pb) return pa - pb;
-                            return (a.dueDate || '9999').localeCompare(b.dueDate || '9999');
-                          }
-                        })
-                        .map(task => (
-                          <TaskCard
-                            key={task.id}
-                            task={task}
-                            onComplete={() => completeTask(task.id)}
-                            onEdit={() => setShowAddTaskModal(task)}
-                            onDelete={() => deleteTask(task.id)}
-                            onHighlight={() => highlightTask(task.id)}
-                            showToast={showToast}
-                            currentUser={currentUser}
-                            getLinkedLabel={(linked) => linked?.propertyId ? getPropertyName(linked.propertyId) : null}
-                          />
-                        ))}
-                      {sharedTasks.filter(t => t.status !== 'done').filter(t => taskMatchesHorizon(t, hubTaskFilter)).length === 0 && (
-                        <p className="text-center text-white/30 py-8">No tasks match this filter</p>
-                      )}
-                    </div>
-                  </div>
                 </div>
               )}
 
@@ -1294,6 +1246,149 @@ export default function RainbowRentals() {
                   }}
                   showToast={showToast}
                 />
+              )}
+
+              {/* ========== ACTION ITEMS SECTION ========== */}
+              {activeSection === 'action-items' && (
+                <div>
+                  <h2 className="text-xl font-bold text-white mb-4">Action Items</h2>
+
+                  {/* Active Move-In/Move-Out Checklists */}
+                  {(() => {
+                    const activeChecklists = sharedLists.filter(l =>
+                      (l.category === 'move-in' || l.category === 'move-out') && l.status !== 'archived'
+                    );
+                    return (
+                      <div className="mb-6">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wide">Active Checklists</h3>
+                          <button onClick={() => setShowChecklistInitModal('create')} className="text-xs text-teal-400 hover:text-teal-300 font-medium">+ New</button>
+                        </div>
+                        {activeChecklists.length === 0 ? (
+                          <p className="text-center text-white/30 py-6">No active checklists</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {activeChecklists.map(list => {
+                              const checked = list.items?.filter(i => i.checked).length || 0;
+                              const total = list.items?.length || 0;
+                              const pct = total > 0 ? Math.round((checked / total) * 100) : 0;
+                              const propName = list.linkedTo?.itemId ? getPropertyName(list.linkedTo.itemId) : null;
+                              return (
+                                <button
+                                  key={list.id}
+                                  onClick={() => setShowChecklistDetailModal(list)}
+                                  className="w-full bg-white/[0.05] border border-white/[0.08] rounded-2xl p-4 text-left hover:bg-white/[0.08] transition"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-xl">{list.emoji}</span>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="text-sm font-semibold text-white truncate">{list.name}</div>
+                                      <div className="flex items-center gap-2 mt-0.5">
+                                        <span className="text-xs text-white/40">{checked}/{total} items</span>
+                                        {propName && (
+                                          <>
+                                            <span className="text-xs text-white/30">•</span>
+                                            <span className="text-xs text-teal-400">{propName}</span>
+                                          </>
+                                        )}
+                                        <span className="text-xs text-white/30">•</span>
+                                        {list.signature ? (
+                                          <span className="text-xs text-teal-400">✓ Signed</span>
+                                        ) : (
+                                          <span className="text-xs text-yellow-400">Needs signature</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    {/* Progress circle */}
+                                    <div className="shrink-0 w-10 h-10 relative">
+                                      <svg className="w-10 h-10 -rotate-90" viewBox="0 0 36 36">
+                                        <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="3" className="text-slate-700" />
+                                        <circle cx="18" cy="18" r="15" fill="none" strokeWidth="3"
+                                          strokeDasharray={`${(pct / 100) * 94.2} 94.2`}
+                                          strokeLinecap="round"
+                                          className={pct === 100 ? 'text-teal-400' : 'text-purple-400'}
+                                        />
+                                      </svg>
+                                      <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white/60">{pct}%</span>
+                                    </div>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* To-Do List */}
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wide">To-Do List</h3>
+                      <button onClick={() => setShowAddTaskModal('create')} className="text-xs text-teal-400 hover:text-teal-300 font-medium">+ Add Task</button>
+                    </div>
+
+                    {/* Task filters + sort */}
+                    <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                      <div className="flex gap-1.5 flex-wrap">
+                        {timeHorizons.map(h => (
+                          <button key={h.value} onClick={() => setHubTaskFilter(h.value)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                              hubTaskFilter === h.value ? 'bg-teal-500 text-white' : 'bg-white/10 text-white/60 hover:bg-white/20'
+                            }`}>{h.label}</button>
+                        ))}
+                      </div>
+                      <div className="flex gap-1.5">
+                        <button onClick={() => setHubTaskSort('priority')}
+                          className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition ${
+                            hubTaskSort === 'priority' ? 'bg-white/20 text-white' : 'bg-white/5 text-white/40 hover:bg-white/10'
+                          }`}>Priority</button>
+                        <button onClick={() => setHubTaskSort('date')}
+                          className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition ${
+                            hubTaskSort === 'date' ? 'bg-white/20 text-white' : 'bg-white/5 text-white/40 hover:bg-white/10'
+                          }`}>Due Date</button>
+                      </div>
+                    </div>
+
+                    {/* Task list */}
+                    <div className="space-y-2">
+                      {sharedTasks
+                        .filter(t => t.status !== 'done')
+                        .filter(t => taskMatchesHorizon(t, hubTaskFilter))
+                        .sort((a, b) => {
+                          if (hubTaskSort === 'date') {
+                            const da = a.dueDate || '9999';
+                            const db = b.dueDate || '9999';
+                            if (da !== db) return da.localeCompare(db);
+                            const pOrder = { high: 0, medium: 1, low: 2 };
+                            return (pOrder[a.priority] ?? 2) - (pOrder[b.priority] ?? 2);
+                          } else {
+                            const pOrder = { high: 0, medium: 1, low: 2 };
+                            const pa = pOrder[a.priority] ?? 2;
+                            const pb = pOrder[b.priority] ?? 2;
+                            if (pa !== pb) return pa - pb;
+                            return (a.dueDate || '9999').localeCompare(b.dueDate || '9999');
+                          }
+                        })
+                        .map(task => (
+                          <TaskCard
+                            key={task.id}
+                            task={task}
+                            onComplete={() => completeTask(task.id)}
+                            onEdit={() => setShowAddTaskModal(task)}
+                            onDelete={() => deleteTask(task.id)}
+                            onHighlight={() => highlightTask(task.id)}
+                            showToast={showToast}
+                            currentUser={currentUser}
+                            getLinkedLabel={(linked) => linked?.propertyId ? getPropertyName(linked.propertyId) : null}
+                          />
+                        ))}
+                      {sharedTasks.filter(t => t.status !== 'done').filter(t => taskMatchesHorizon(t, hubTaskFilter)).length === 0 && (
+                        <p className="text-center text-white/30 py-8">No tasks match this filter</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
               )}
 
               {/* ========== DOCUMENTS SECTION ========== */}
@@ -1811,14 +1906,12 @@ export default function RainbowRentals() {
                 <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[89]" onClick={() => setShowAddNewMenu(false)} />
                 <div className="absolute top-16 left-0 z-[91] bg-slate-800/95 backdrop-blur-md border border-white/15 rounded-2xl p-4 shadow-2xl w-[240px]"
                   style={{ animation: 'fabGridIn 0.15s ease-out both' }}>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 gap-3">
                     {[
                       { action: () => setShowAddTaskModal('create'), icon: '✅', label: 'Task', gradient: 'from-blue-400 to-indigo-500' },
                       { action: () => setShowAddRentModal('create'), icon: '💰', label: 'Rent', gradient: 'from-emerald-400 to-green-500' },
                       { action: () => setShowAddExpenseModal('create'), icon: '💸', label: 'Expense', gradient: 'from-red-400 to-rose-500' },
                       { action: () => setShowSharedListModal('create'), icon: '📝', label: 'List', gradient: 'from-emerald-400 to-teal-500' },
-                      { action: () => setShowChecklistInitModal('move-in'), icon: '📋', label: 'Move-In', gradient: 'from-purple-400 to-violet-500' },
-                      { action: () => setShowChecklistInitModal('move-out'), icon: '📦', label: 'Move-Out', gradient: 'from-amber-400 to-orange-500' },
                     ].map((item, idx) => (
                       <button key={item.label} onClick={() => { setShowAddNewMenu(false); item.action(); }}
                         className="flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-xl hover:bg-white/10 transition active:scale-95"
@@ -1854,17 +1947,15 @@ export default function RainbowRentals() {
                 <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[99]" onClick={() => setShowAddNewMenu(false)} />
                 <div className="fixed right-4 z-[101] bg-slate-800/95 backdrop-blur-md border border-white/15 rounded-2xl p-4 shadow-2xl w-[240px]"
                   style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 132px)', animation: 'fabGridUp 0.2s cubic-bezier(0.16,1,0.3,1) both', transformOrigin: 'bottom right' }}>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 gap-3">
                     {[
                       { action: () => setShowAddTaskModal('create'), icon: '✅', label: 'Task', gradient: 'from-blue-400 to-indigo-500' },
                       { action: () => setShowAddRentModal('create'), icon: '💰', label: 'Rent', gradient: 'from-emerald-400 to-green-500' },
                       { action: () => setShowAddExpenseModal('create'), icon: '💸', label: 'Expense', gradient: 'from-red-400 to-rose-500' },
                       { action: () => setShowSharedListModal('create'), icon: '📝', label: 'List', gradient: 'from-emerald-400 to-teal-500' },
-                      { action: () => setShowChecklistInitModal('move-in'), icon: '📋', label: 'Move-In', gradient: 'from-purple-400 to-violet-500' },
-                      { action: () => setShowChecklistInitModal('move-out'), icon: '📦', label: 'Move-Out', gradient: 'from-amber-400 to-orange-500' },
                     ].map((item, idx) => {
-                      const row = Math.floor(idx / 3);
-                      const delay = (1 - row) * 0.04 + (idx % 3) * 0.015;
+                      const row = Math.floor(idx / 2);
+                      const delay = (1 - row) * 0.04 + (idx % 2) * 0.015;
                       return (
                         <button key={item.label} onClick={() => { setShowAddNewMenu(false); item.action(); }}
                           className="flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-xl hover:bg-white/10 transition active:scale-95"
@@ -1893,6 +1984,7 @@ export default function RainbowRentals() {
                   { id: 'tenants', label: 'Tenants', emoji: '👤', gradient: 'from-blue-400 to-indigo-500' },
                   { id: 'rent', label: 'Rent', emoji: '💰', gradient: 'from-emerald-400 to-green-500' },
                   { id: 'expenses', label: 'Costs', emoji: '💸', gradient: 'from-red-400 to-rose-500' },
+                  { id: 'action-items', label: 'Actions', emoji: '✅', gradient: 'from-indigo-400 to-purple-500' },
                   { id: 'documents', label: 'Docs', emoji: '📄', gradient: 'from-amber-400 to-orange-500' },
                 ].map((section) => (
                   <button

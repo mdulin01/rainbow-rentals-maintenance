@@ -66,13 +66,18 @@ const PropertyCard = ({ property, onEdit, onDelete, onViewDetails, documents = [
 
   const hasMortgageData = property.hasMortgage && (mortgageBalance > 0 || mortgagePayment > 0);
 
+  // Color by property type: purple for single-family, teal for condos/everything else
+  const typeGradient = property.type === 'single-family'
+    ? 'from-purple-400 to-violet-500'
+    : 'from-teal-400 to-cyan-500';
+
   return (
     <div
       className="bg-white/[0.03] border border-white/[0.08] rounded-2xl overflow-hidden hover:bg-white/[0.05] transition cursor-pointer group"
       onClick={() => onViewDetails()}
     >
       {/* Color bar — spans full width */}
-      <div className={`h-1.5 bg-gradient-to-r ${property.color || 'from-teal-400 to-cyan-500'}`} />
+      <div className={`h-1.5 bg-gradient-to-r ${typeGradient}`} />
 
       <div className="flex flex-col md:flex-row">
         {/* LEFT — Property Info */}
@@ -84,7 +89,7 @@ const PropertyCard = ({ property, onEdit, onDelete, onViewDetails, documents = [
                 <img src={property.photo} alt="" className="w-full h-full object-cover" />
               </div>
             ) : (
-              <div className={`w-14 h-14 rounded-xl flex-shrink-0 bg-gradient-to-br ${property.color || 'from-teal-400 to-cyan-500'} flex items-center justify-center`}>
+              <div className={`w-14 h-14 rounded-xl flex-shrink-0 bg-gradient-to-br ${typeGradient} flex items-center justify-center`}>
                 <span className="text-xl">{property.emoji || '🏠'}</span>
               </div>
             )}

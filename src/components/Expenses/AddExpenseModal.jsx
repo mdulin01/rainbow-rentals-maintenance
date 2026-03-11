@@ -63,8 +63,8 @@ export default function AddExpenseModal({ expense, properties, onSave, onDelete,
     }));
   };
 
-  // Photo/PDF handling
-  const resizeImage = (file, maxWidth = 800) => {
+  // Compress image to JPEG blob (receipts don't need high res)
+  const compressImage = (file, maxWidth = 600, quality = 0.6) => {
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -76,7 +76,30 @@ export default function AddExpenseModal({ expense, properties, onSave, onDelete,
           canvas.height = img.height * ratio;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          resolve(canvas.toDataURL('image/jpeg', 0.7));
+          canvas.toBlob((blob) => {
+            resolve(blob);
+          }, 'image/jpeg', quality);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Convert image to base64 data URL (fallback)
+  const compressImageToDataUrl = (file, maxWidth = 600, quality = 0.6) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ratio = Math.min(maxWidth / img.width, maxWidth / img.height, 1);
+          canvas.width = img.width * ratio;
+          canvas.height = img.height * ratio;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
         };
         img.src = e.target.result;
       };
@@ -95,12 +118,20 @@ export default function AddExpenseModal({ expense, properties, onSave, onDelete,
     setUploading(true);
     try {
       if (onUploadPhoto) {
-        // Upload to Firebase Storage (works for both images and PDFs)
-        const url = await onUploadPhoto(file, `expenses/${Date.now()}_${file.name}`);
-        setForm(f => ({ ...f, receiptPhoto: url, receiptType: isPdf ? 'pdf' : 'image' }));
+        if (isImage) {
+          // Compress image before uploading to Firebase Storage
+          const compressedBlob = await compressImage(file);
+          const compressedFile = new File([compressedBlob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
+          const url = await onUploadPhoto(compressedFile, `expenses/${Date.now()}_${compressedFile.name}`);
+          setForm(f => ({ ...f, receiptPhoto: url, receiptType: 'image' }));
+        } else {
+          // PDFs upload as-is
+          const url = await onUploadPhoto(file, `expenses/${Date.now()}_${file.name}`);
+          setForm(f => ({ ...f, receiptPhoto: url, receiptType: 'pdf' }));
+        }
       } else if (isImage) {
         // Base64 fallback for images only
-        const dataUrl = await resizeImage(file);
+        const dataUrl = await compressImageToDataUrl(file);
         setForm(f => ({ ...f, receiptPhoto: dataUrl, receiptType: 'image' }));
       }
     } catch (err) {
@@ -108,7 +139,7 @@ export default function AddExpenseModal({ expense, properties, onSave, onDelete,
       // Try base64 fallback for images
       if (isImage) {
         try {
-          const dataUrl = await resizeImage(file);
+          const dataUrl = await compressImageToDataUrl(file);
           setForm(f => ({ ...f, receiptPhoto: dataUrl, receiptType: 'image' }));
         } catch (e2) {
           console.error('Base64 fallback also failed:', e2);

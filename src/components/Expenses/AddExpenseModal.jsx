@@ -40,6 +40,7 @@ export default function AddExpenseModal({ expense, properties, onSave, onDelete,
         vendor: expense.vendor || '',
         notes: expense.notes || '',
         receiptPhoto: expense.receiptPhoto || '',
+        receiptType: expense.receiptType || '',
         recurring: expense.recurring || false,
         recurringFrequency: expense.recurringFrequency || 'monthly',
         dueDay: expense.dueDay || '',
@@ -62,7 +63,7 @@ export default function AddExpenseModal({ expense, properties, onSave, onDelete,
     }));
   };
 
-  // Photo handling
+  // Photo/PDF handling
   const resizeImage = (file, maxWidth = 800) => {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -85,25 +86,36 @@ export default function AddExpenseModal({ expense, properties, onSave, onDelete,
 
   const handlePhotoPick = async (e) => {
     const file = e.target.files?.[0];
-    if (!file || !file.type.startsWith('image/')) return;
+    if (!file) return;
 
-    if (onUploadPhoto) {
-      // Use Firebase Storage upload
-      setUploading(true);
-      try {
+    const isImage = file.type.startsWith('image/');
+    const isPdf = file.type === 'application/pdf';
+    if (!isImage && !isPdf) return;
+
+    setUploading(true);
+    try {
+      if (onUploadPhoto) {
+        // Upload to Firebase Storage (works for both images and PDFs)
         const url = await onUploadPhoto(file, `expenses/${Date.now()}_${file.name}`);
-        setForm(f => ({ ...f, receiptPhoto: url }));
-      } catch (err) {
-        // Fallback to base64
+        setForm(f => ({ ...f, receiptPhoto: url, receiptType: isPdf ? 'pdf' : 'image' }));
+      } else if (isImage) {
+        // Base64 fallback for images only
         const dataUrl = await resizeImage(file);
-        setForm(f => ({ ...f, receiptPhoto: dataUrl }));
+        setForm(f => ({ ...f, receiptPhoto: dataUrl, receiptType: 'image' }));
       }
-      setUploading(false);
-    } else {
-      // Base64 fallback
-      const dataUrl = await resizeImage(file);
-      setForm(f => ({ ...f, receiptPhoto: dataUrl }));
+    } catch (err) {
+      console.error('Upload failed:', err);
+      // Try base64 fallback for images
+      if (isImage) {
+        try {
+          const dataUrl = await resizeImage(file);
+          setForm(f => ({ ...f, receiptPhoto: dataUrl, receiptType: 'image' }));
+        } catch (e2) {
+          console.error('Base64 fallback also failed:', e2);
+        }
+      }
     }
+    setUploading(false);
   };
 
   // Auto-calculate mileage amount and description
@@ -154,6 +166,7 @@ export default function AddExpenseModal({ expense, properties, onSave, onDelete,
       tripTo: isMileage ? form.tripTo : undefined,
       description: form.description || (isMileage ? `Mileage: ${form.miles} mi` : ''),
       receiptPhoto: form.receiptPhoto || '',
+      receiptType: form.receiptType || '',
       recurring: form.recurring || false,
       recurringFrequency: form.recurring ? form.recurringFrequency : undefined,
       dueDay: form.recurring ? parseInt(form.dueDay) : undefined,
@@ -402,25 +415,36 @@ export default function AddExpenseModal({ expense, properties, onSave, onDelete,
 
               {/* Receipt Photo */}
               <div>
-                <label className="text-xs text-white/40 mb-1 block">Receipt Photo</label>
+                <label className="text-xs text-white/40 mb-1 block">Receipt (Photo or PDF)</label>
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
-                  capture="environment"
+                  accept="image/*,.pdf,application/pdf"
                   onChange={handlePhotoPick}
                   className="hidden"
                 />
                 {form.receiptPhoto ? (
                   <div className="relative">
-                    <img
-                      src={form.receiptPhoto}
-                      alt="Receipt"
-                      className="w-full max-h-40 object-cover rounded-xl border border-white/[0.08]"
-                    />
+                    {(form.receiptType === 'pdf' || form.receiptPhoto.endsWith('.pdf') || form.receiptPhoto.includes('application%2Fpdf')) ? (
+                      <a
+                        href={form.receiptPhoto}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block w-full py-6 bg-white/[0.05] border border-white/[0.08] rounded-xl text-center hover:bg-white/[0.08] transition"
+                      >
+                        <span className="text-3xl block mb-1">📄</span>
+                        <span className="text-sm text-white/60">PDF Receipt — tap to view</span>
+                      </a>
+                    ) : (
+                      <img
+                        src={form.receiptPhoto}
+                        alt="Receipt"
+                        className="w-full max-h-40 object-cover rounded-xl border border-white/[0.08]"
+                      />
+                    )}
                     <button
                       type="button"
-                      onClick={() => setForm(f => ({ ...f, receiptPhoto: '' }))}
+                      onClick={() => setForm(f => ({ ...f, receiptPhoto: '', receiptType: '' }))}
                       className="absolute top-2 right-2 p-1.5 bg-red-500/80 hover:bg-red-500 rounded-full transition text-white"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -438,7 +462,7 @@ export default function AddExpenseModal({ expense, properties, onSave, onDelete,
                     ) : (
                       <>
                         <ImagePlus className="w-5 h-5" />
-                        <span>Tap to add receipt photo</span>
+                        <span>Add receipt photo or PDF</span>
                       </>
                     )}
                   </button>

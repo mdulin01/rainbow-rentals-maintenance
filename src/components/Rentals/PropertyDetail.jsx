@@ -248,6 +248,18 @@ const PropertyDetail = ({ property, onBack, onEdit, onDelete, onEditTenant, onAd
                   <p className="text-slate-400 text-sm mb-1">Monthly Rent</p>
                   <p className="text-white font-medium">${property.monthlyRent ? parseFloat(property.monthlyRent).toLocaleString() : '0'}/month</p>
                 </div>
+                <div>
+                  <p className="text-slate-400 text-sm mb-1">Annual Property Tax</p>
+                  <p className="text-white font-medium">{property.annualPropertyTax ? formatCurrency(property.annualPropertyTax) + '/yr' : '—'}</p>
+                </div>
+                <div>
+                  <p className="text-slate-400 text-sm mb-1">Annual Insurance</p>
+                  <p className="text-white font-medium">{property.annualInsurance ? formatCurrency(property.annualInsurance) + '/yr' : '—'}</p>
+                </div>
+                <div>
+                  <p className="text-slate-400 text-sm mb-1">Monthly HOA</p>
+                  <p className="text-white font-medium">{property.monthlyHoa ? formatCurrency(property.monthlyHoa) + '/mo' : '—'}</p>
+                </div>
               </div>
             </div>
 

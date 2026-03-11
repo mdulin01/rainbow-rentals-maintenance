@@ -15,6 +15,9 @@ const NewPropertyModal = ({ property, onSave, onClose }) => {
     purchasePrice: '',
     currentValue: '',
     monthlyRent: '',
+    annualPropertyTax: '',
+    annualInsurance: '',
+    monthlyHoa: '',
     hasMortgage: false,
     mortgageBalance: '',
     mortgageAPR: '',
@@ -57,6 +60,9 @@ const NewPropertyModal = ({ property, onSave, onClose }) => {
       purchasePrice: '',
       currentValue: '',
       monthlyRent: '',
+      annualPropertyTax: '',
+      annualInsurance: '',
+      monthlyHoa: '',
       hasMortgage: false,
       mortgageBalance: '',
       mortgageAPR: '',
@@ -323,6 +329,39 @@ const NewPropertyModal = ({ property, onSave, onClose }) => {
                   type="number"
                   name="monthlyRent"
                   value={formData.monthlyRent}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                  className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-white/30 transition"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-400 text-sm mb-2">Annual Property Tax</label>
+                <input
+                  type="number"
+                  name="annualPropertyTax"
+                  value={formData.annualPropertyTax}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                  className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-white/30 transition"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-400 text-sm mb-2">Annual Insurance</label>
+                <input
+                  type="number"
+                  name="annualInsurance"
+                  value={formData.annualInsurance}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                  className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-white/30 transition"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-400 text-sm mb-2">Monthly HOA</label>
+                <input
+                  type="number"
+                  name="monthlyHoa"
+                  value={formData.monthlyHoa}
                   onChange={handleChange}
                   placeholder="0.00"
                   className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-white/30 transition"

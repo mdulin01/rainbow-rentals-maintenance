@@ -117,6 +117,7 @@ export default function RainbowRentals() {
   const [isOwner, setIsOwner] = useState(false);
   const [showAddNewMenu, setShowAddNewMenu] = useState(false);
   const [showMobileSectionDropdown, setShowMobileSectionDropdown] = useState(false);
+  const [dashboardReportMonth, setDashboardReportMonth] = useState(null); // null = current month, 0-11 = specific month, 12 = YTD
 
   // Search
   const [showSearch, setShowSearch] = useState(false);
@@ -812,77 +813,183 @@ export default function RainbowRentals() {
                 <div>
                   <h2 className="text-xl font-bold text-white mb-4">Dashboard</h2>
 
-                  {/* Monthly & YTD Financial Summary */}
+                  {/* Monthly Report Table */}
                   {(() => {
                     const now = new Date();
-                    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-                    const currentYear = String(now.getFullYear());
-                    const monthName = now.toLocaleString('en-US', { month: 'long' });
+                    const currentYear = now.getFullYear();
+                    const currentMonthIdx = now.getMonth(); // 0-based
+                    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-                    // Calculate rent income for current month
-                    const monthlyRentIncome = rentPayments
-                      .filter(r => (r.status === 'paid' || r.status === 'partial') && (r.datePaid || r.month || '').startsWith(currentMonth))
+                    // State-like behavior using a data attribute on the container
+                    // We'll use a simple approach: store selected month in a ref-like pattern
+                    const reportMonth = dashboardReportMonth ?? currentMonthIdx; // null = current month, 12 = YTD
+                    const isYTD = reportMonth === 12;
+                    const selectedMonthLabel = isYTD ? `${currentYear} Year-to-Date` : `${monthNames[reportMonth]} ${currentYear}`;
+
+                    // Build prefix filter for date matching
+                    const getDateFilter = (monthIdx) => {
+                      if (monthIdx === 12) return String(currentYear); // YTD
+                      return `${currentYear}-${String(monthIdx + 1).padStart(2, '0')}`;
+                    };
+                    const datePrefix = getDateFilter(reportMonth);
+
+                    // Get expense categories to show as columns (group small ones into "Other")
+                    const mainExpenseCats = ['mortgage','repair','maintenance','insurance','utilities','taxes','hoa','landscaping'];
+                    const otherCats = expenseCategories.map(c => c.value).filter(v => !mainExpenseCats.includes(v));
+
+                    // Per-property data
+                    const propRows = properties.map(p => {
+                      const pid = String(p.id);
+                      // Income for this property
+                      const income = rentPayments
+                        .filter(r => String(r.propertyId) === pid && (r.status === 'paid' || r.status === 'partial') && (r.datePaid || r.month || '').startsWith(datePrefix))
+                        .reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
+
+                      // Expenses by category
+                      const propExpenses = expenses.filter(e => !e.isTemplate && String(e.propertyId) === pid && (e.date || '').startsWith(datePrefix));
+                      const expByCat = {};
+                      let totalExp = 0;
+                      mainExpenseCats.forEach(cat => {
+                        const amt = propExpenses.filter(e => e.category === cat).reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+                        expByCat[cat] = amt;
+                        totalExp += amt;
+                      });
+                      const otherAmt = propExpenses.filter(e => otherCats.includes(e.category)).reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+                      expByCat['other'] = otherAmt;
+                      totalExp += otherAmt;
+
+                      return { property: p, income, expByCat, totalExp, net: income - totalExp };
+                    });
+
+                    // General (no property) expenses
+                    const generalExpenses = expenses.filter(e => !e.isTemplate && !e.propertyId && (e.date || '').startsWith(datePrefix));
+                    const generalExpByCat = {};
+                    let generalTotalExp = 0;
+                    mainExpenseCats.forEach(cat => {
+                      const amt = generalExpenses.filter(e => e.category === cat).reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+                      generalExpByCat[cat] = amt;
+                      generalTotalExp += amt;
+                    });
+                    const generalOther = generalExpenses.filter(e => otherCats.includes(e.category)).reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+                    generalExpByCat['other'] = generalOther;
+                    generalTotalExp += generalOther;
+
+                    // General income (no property)
+                    const generalIncome = rentPayments
+                      .filter(r => !r.propertyId && (r.status === 'paid' || r.status === 'partial') && (r.datePaid || r.month || '').startsWith(datePrefix))
                       .reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
 
-                    // Calculate rent income for YTD
-                    const ytdRentIncome = rentPayments
-                      .filter(r => (r.status === 'paid' || r.status === 'partial') && (r.datePaid || r.month || '').startsWith(currentYear))
-                      .reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
+                    // Totals
+                    const totalIncome = propRows.reduce((s, r) => s + r.income, 0) + generalIncome;
+                    const totalExpenses = propRows.reduce((s, r) => s + r.totalExp, 0) + generalTotalExp;
+                    const totalNet = totalIncome - totalExpenses;
 
-                    // Calculate expenses for current month
-                    const monthlyExpenses = expenses
-                      .filter(e => !e.isTemplate && (e.date || '').startsWith(currentMonth))
-                      .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+                    // Columns for expense categories
+                    const expCols = [...mainExpenseCats, 'other'];
+                    const expColLabels = {
+                      mortgage: 'Mortgage', repair: 'Repairs', maintenance: 'Maint.', insurance: 'Insurance',
+                      utilities: 'Utilities', taxes: 'Taxes', hoa: 'HOA', landscaping: 'Landscape', other: 'Other'
+                    };
 
-                    // Calculate expenses for YTD
-                    const ytdExpenses = expenses
-                      .filter(e => !e.isTemplate && (e.date || '').startsWith(currentYear))
-                      .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+                    // Filter to only show columns that have data
+                    const activeExpCols = expCols.filter(cat => {
+                      const hasData = propRows.some(r => r.expByCat[cat] > 0) || (generalExpByCat[cat] > 0);
+                      return hasData;
+                    });
 
-                    const monthlyNet = monthlyRentIncome - monthlyExpenses;
-                    const ytdNet = ytdRentIncome - ytdExpenses;
+                    const fmtShort = (v) => v === 0 ? '—' : formatCurrency(v);
 
                     return (
-                      <div className="grid grid-cols-2 gap-3 mb-6">
-                        {/* Monthly column */}
-                        <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-4">
-                          <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wide mb-3">{monthName}</h3>
-                          <div className="space-y-2.5">
-                            <div>
-                              <div className="text-[11px] text-white/40">Gross Income</div>
-                              <div className="text-lg font-bold text-emerald-400">{formatCurrency(monthlyRentIncome)}</div>
-                            </div>
-                            <div>
-                              <div className="text-[11px] text-white/40">Expenses</div>
-                              <div className="text-lg font-bold text-red-400">{formatCurrency(monthlyExpenses)}</div>
-                            </div>
-                            <div className="pt-2 border-t border-white/[0.08]">
-                              <div className="text-[11px] text-white/40">Net Income</div>
-                              <div className={`text-lg font-bold ${monthlyNet >= 0 ? 'text-teal-400' : 'text-red-400'}`}>
-                                {monthlyNet < 0 ? '-' : ''}{formatCurrency(Math.abs(monthlyNet))}
-                              </div>
-                            </div>
-                          </div>
+                      <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-4 mb-6">
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-base font-bold text-white">
+                            Monthly Report <span className="font-normal text-white/50">— {selectedMonthLabel}</span>
+                          </h3>
                         </div>
-                        {/* YTD column */}
-                        <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl p-4">
-                          <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wide mb-3">{currentYear} YTD</h3>
-                          <div className="space-y-2.5">
-                            <div>
-                              <div className="text-[11px] text-white/40">Gross Income</div>
-                              <div className="text-lg font-bold text-emerald-400">{formatCurrency(ytdRentIncome)}</div>
-                            </div>
-                            <div>
-                              <div className="text-[11px] text-white/40">Expenses</div>
-                              <div className="text-lg font-bold text-red-400">{formatCurrency(ytdExpenses)}</div>
-                            </div>
-                            <div className="pt-2 border-t border-white/[0.08]">
-                              <div className="text-[11px] text-white/40">Net Income</div>
-                              <div className={`text-lg font-bold ${ytdNet >= 0 ? 'text-teal-400' : 'text-red-400'}`}>
-                                {ytdNet < 0 ? '-' : ''}{formatCurrency(Math.abs(ytdNet))}
-                              </div>
-                            </div>
-                          </div>
+
+                        {/* Month tabs */}
+                        <div className="flex gap-1 mb-4 overflow-x-auto pb-1 scrollbar-hide">
+                          {monthNames.map((m, idx) => (
+                            <button key={m}
+                              onClick={() => setDashboardReportMonth(idx)}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition ${
+                                reportMonth === idx
+                                  ? 'bg-amber-500 text-slate-900'
+                                  : idx <= currentMonthIdx
+                                    ? 'bg-white/[0.08] text-white/60 hover:bg-white/[0.12]'
+                                    : 'bg-white/[0.03] text-white/25'
+                              }`}
+                            >{m}</button>
+                          ))}
+                          <button
+                            onClick={() => setDashboardReportMonth(12)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition ${
+                              reportMonth === 12
+                                ? 'bg-amber-500 text-slate-900'
+                                : 'bg-white/[0.08] text-white/60 hover:bg-white/[0.12]'
+                            }`}
+                          >YTD</button>
+                        </div>
+
+                        {/* Table */}
+                        <div className="overflow-x-auto -mx-4 px-4">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="border-b border-white/[0.08]">
+                                <th className="text-left text-white/40 font-semibold uppercase tracking-wider py-2 pr-3 whitespace-nowrap">Property</th>
+                                <th className="text-right text-emerald-400/70 font-semibold uppercase tracking-wider py-2 px-2 whitespace-nowrap">Income</th>
+                                {activeExpCols.map(cat => (
+                                  <th key={cat} className="text-right text-red-400/60 font-semibold uppercase tracking-wider py-2 px-2 whitespace-nowrap">{expColLabels[cat]}</th>
+                                ))}
+                                <th className="text-right text-red-400/70 font-semibold uppercase tracking-wider py-2 px-2 whitespace-nowrap">Total Exp</th>
+                                <th className="text-right text-white/50 font-semibold uppercase tracking-wider py-2 pl-2 whitespace-nowrap">Net</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {propRows.map(row => (
+                                <tr key={row.property.id} className="border-b border-white/[0.04] hover:bg-white/[0.03]">
+                                  <td className="py-2 pr-3 text-white/80 font-medium whitespace-nowrap">{row.property.emoji || '🏠'} {row.property.name}</td>
+                                  <td className="py-2 px-2 text-right text-emerald-400 font-medium">{fmtShort(row.income)}</td>
+                                  {activeExpCols.map(cat => (
+                                    <td key={cat} className="py-2 px-2 text-right text-red-400/80">{fmtShort(row.expByCat[cat])}</td>
+                                  ))}
+                                  <td className="py-2 px-2 text-right text-red-400 font-medium">{fmtShort(row.totalExp)}</td>
+                                  <td className={`py-2 pl-2 text-right font-bold ${row.net >= 0 ? 'text-teal-400' : 'text-red-400'}`}>
+                                    {row.net === 0 ? '—' : `${row.net < 0 ? '-' : ''}${formatCurrency(Math.abs(row.net))}`}
+                                  </td>
+                                </tr>
+                              ))}
+                              {/* General row if there are unassigned expenses/income */}
+                              {(generalTotalExp > 0 || generalIncome > 0) && (
+                                <tr className="border-b border-white/[0.04] hover:bg-white/[0.03]">
+                                  <td className="py-2 pr-3 text-white/50 italic whitespace-nowrap">📋 General</td>
+                                  <td className="py-2 px-2 text-right text-emerald-400 font-medium">{fmtShort(generalIncome)}</td>
+                                  {activeExpCols.map(cat => (
+                                    <td key={cat} className="py-2 px-2 text-right text-red-400/80">{fmtShort(generalExpByCat[cat])}</td>
+                                  ))}
+                                  <td className="py-2 px-2 text-right text-red-400 font-medium">{fmtShort(generalTotalExp)}</td>
+                                  <td className={`py-2 pl-2 text-right font-bold ${(generalIncome - generalTotalExp) >= 0 ? 'text-teal-400' : 'text-red-400'}`}>
+                                    {(generalIncome - generalTotalExp) === 0 ? '—' : `${(generalIncome - generalTotalExp) < 0 ? '-' : ''}${formatCurrency(Math.abs(generalIncome - generalTotalExp))}`}
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                            <tfoot>
+                              <tr className="border-t-2 border-white/[0.15]">
+                                <td className="py-2.5 pr-3 text-white font-bold uppercase text-[11px] tracking-wide">Total</td>
+                                <td className="py-2.5 px-2 text-right text-emerald-400 font-bold">{formatCurrency(totalIncome)}</td>
+                                {activeExpCols.map(cat => {
+                                  const catTotal = propRows.reduce((s, r) => s + r.expByCat[cat], 0) + (generalExpByCat[cat] || 0);
+                                  return <td key={cat} className="py-2.5 px-2 text-right text-red-400 font-bold">{fmtShort(catTotal)}</td>;
+                                })}
+                                <td className="py-2.5 px-2 text-right text-red-400 font-bold">{formatCurrency(totalExpenses)}</td>
+                                <td className={`py-2.5 pl-2 text-right font-bold text-sm ${totalNet >= 0 ? 'text-teal-400' : 'text-red-400'}`}>
+                                  {totalNet < 0 ? '-' : ''}{formatCurrency(Math.abs(totalNet))}
+                                </td>
+                              </tr>
+                            </tfoot>
+                          </table>
                         </div>
                       </div>
                     );

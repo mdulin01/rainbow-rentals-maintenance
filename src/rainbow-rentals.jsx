@@ -112,7 +112,7 @@ export default function RainbowRentals() {
   }, []);
 
   // ========== NAVIGATION ==========
-  const [activeSection, setActiveSection] = useState('dashboard');
+  const [activeSection, setActiveSection] = useState('action-items');
   const [currentUser, setCurrentUser] = useState('Mike');
   const [isOwner, setIsOwner] = useState(false);
   const [showAddNewMenu, setShowAddNewMenu] = useState(false);
@@ -626,12 +626,12 @@ export default function RainbowRentals() {
 
   // Mobile section dropdown
   const allSections = [
-    { id: 'dashboard', label: 'Dashboard', emoji: '📊' },
+    { id: 'action-items', label: 'Action Items', emoji: '✅' },
     { id: 'rentals', label: 'Properties', emoji: '🏠' },
     { id: 'tenants', label: 'Tenants', emoji: '👤' },
     { id: 'rent', label: 'Rent', emoji: '💰' },
     { id: 'expenses', label: 'Expenses', emoji: '💸' },
-    { id: 'action-items', label: 'Action Items', emoji: '✅' },
+    { id: 'dashboard', label: 'Dashboard', emoji: '📊' },
     { id: 'documents', label: 'Documents', emoji: '📄' },
   ];
   const activeSectionInfo = allSections.find(s => s.id === activeSection) || allSections[0];
@@ -728,12 +728,12 @@ export default function RainbowRentals() {
               {/* Desktop nav tabs */}
               <nav className="hidden md:flex items-center gap-1 ml-6">
                 {[
-                  { id: 'dashboard', label: 'Dashboard', emoji: '📊' },
+                  { id: 'action-items', label: 'Action Items', emoji: '✅' },
                   { id: 'rentals', label: 'Properties', emoji: '🏠' },
                   { id: 'tenants', label: 'Tenants', emoji: '👤' },
                   { id: 'rent', label: 'Rents', emoji: '💰' },
                   { id: 'expenses', label: 'Expenses', emoji: '💸' },
-                  { id: 'action-items', label: 'Action Items', emoji: '✅' },
+                  { id: 'dashboard', label: 'Dashboard', emoji: '📊' },
                   { id: 'documents', label: 'Documents', emoji: '📄' },
                 ].map(tab => (
                   <button
@@ -1979,12 +1979,12 @@ export default function RainbowRentals() {
               {/* Tab buttons — all 6 sections */}
               <div className="flex items-end justify-around px-1 pt-1 pb-1">
                 {[
-                  { id: 'dashboard', label: 'Home', emoji: '📊', gradient: 'from-purple-500 to-violet-500' },
+                  { id: 'action-items', label: 'Actions', emoji: '✅', gradient: 'from-indigo-400 to-purple-500' },
                   { id: 'rentals', label: 'Props', emoji: '🏠', gradient: 'from-teal-400 to-cyan-500' },
                   { id: 'tenants', label: 'Tenants', emoji: '👤', gradient: 'from-blue-400 to-indigo-500' },
                   { id: 'rent', label: 'Rent', emoji: '💰', gradient: 'from-emerald-400 to-green-500' },
                   { id: 'expenses', label: 'Costs', emoji: '💸', gradient: 'from-red-400 to-rose-500' },
-                  { id: 'action-items', label: 'Actions', emoji: '✅', gradient: 'from-indigo-400 to-purple-500' },
+                  { id: 'dashboard', label: 'Home', emoji: '📊', gradient: 'from-purple-500 to-violet-500' },
                   { id: 'documents', label: 'Docs', emoji: '📄', gradient: 'from-amber-400 to-orange-500' },
                 ].map((section) => (
                   <button

@@ -629,7 +629,7 @@ export default function RainbowRentals() {
     { id: 'action-items', label: 'Action Items', emoji: '✅' },
     { id: 'rentals', label: 'Properties', emoji: '🏠' },
     { id: 'tenants', label: 'Tenants', emoji: '👤' },
-    { id: 'rent', label: 'Rent', emoji: '💰' },
+    { id: 'rent', label: 'Income', emoji: '💰' },
     { id: 'expenses', label: 'Expenses', emoji: '💸' },
     { id: 'dashboard', label: 'Dashboard', emoji: '📊' },
     { id: 'documents', label: 'Documents', emoji: '📄' },
@@ -731,7 +731,7 @@ export default function RainbowRentals() {
                   { id: 'action-items', label: 'Action Items', emoji: '✅' },
                   { id: 'rentals', label: 'Properties', emoji: '🏠' },
                   { id: 'tenants', label: 'Tenants', emoji: '👤' },
-                  { id: 'rent', label: 'Rents', emoji: '💰' },
+                  { id: 'rent', label: 'Income', emoji: '💰' },
                   { id: 'expenses', label: 'Expenses', emoji: '💸' },
                   { id: 'dashboard', label: 'Dashboard', emoji: '📊' },
                   { id: 'documents', label: 'Documents', emoji: '📄' },
@@ -2020,7 +2020,7 @@ export default function RainbowRentals() {
                   <div className="grid grid-cols-2 gap-3">
                     {[
                       { action: () => setShowAddTaskModal('create'), icon: '✅', label: 'Task', gradient: 'from-blue-400 to-indigo-500' },
-                      { action: () => setShowAddRentModal('create'), icon: '💰', label: 'Rent', gradient: 'from-emerald-400 to-green-500' },
+                      { action: () => setShowAddRentModal('create'), icon: '💰', label: 'Income', gradient: 'from-emerald-400 to-green-500' },
                       { action: () => setShowAddExpenseModal('create'), icon: '💸', label: 'Expense', gradient: 'from-red-400 to-rose-500' },
                       { action: () => setShowSharedListModal('create'), icon: '📝', label: 'List', gradient: 'from-emerald-400 to-teal-500' },
                     ].map((item, idx) => (
@@ -2061,7 +2061,7 @@ export default function RainbowRentals() {
                   <div className="grid grid-cols-2 gap-3">
                     {[
                       { action: () => setShowAddTaskModal('create'), icon: '✅', label: 'Task', gradient: 'from-blue-400 to-indigo-500' },
-                      { action: () => setShowAddRentModal('create'), icon: '💰', label: 'Rent', gradient: 'from-emerald-400 to-green-500' },
+                      { action: () => setShowAddRentModal('create'), icon: '💰', label: 'Income', gradient: 'from-emerald-400 to-green-500' },
                       { action: () => setShowAddExpenseModal('create'), icon: '💸', label: 'Expense', gradient: 'from-red-400 to-rose-500' },
                       { action: () => setShowSharedListModal('create'), icon: '📝', label: 'List', gradient: 'from-emerald-400 to-teal-500' },
                     ].map((item, idx) => {
@@ -2093,7 +2093,7 @@ export default function RainbowRentals() {
                   { id: 'action-items', label: 'Actions', emoji: '✅', gradient: 'from-indigo-400 to-purple-500' },
                   { id: 'rentals', label: 'Props', emoji: '🏠', gradient: 'from-teal-400 to-cyan-500' },
                   { id: 'tenants', label: 'Tenants', emoji: '👤', gradient: 'from-blue-400 to-indigo-500' },
-                  { id: 'rent', label: 'Rent', emoji: '💰', gradient: 'from-emerald-400 to-green-500' },
+                  { id: 'rent', label: 'Income', emoji: '💰', gradient: 'from-emerald-400 to-green-500' },
                   { id: 'expenses', label: 'Costs', emoji: '💸', gradient: 'from-red-400 to-rose-500' },
                   { id: 'dashboard', label: 'Home', emoji: '📊', gradient: 'from-purple-500 to-violet-500' },
                   { id: 'documents', label: 'Docs', emoji: '📄', gradient: 'from-amber-400 to-orange-500' },

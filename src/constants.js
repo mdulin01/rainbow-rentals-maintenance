@@ -94,8 +94,10 @@ export const incomeCategories = [
   { value: 'rent', label: 'Rent', emoji: '💰' },
   { value: 'late-fee', label: 'Late Fee', emoji: '⏰' },
   { value: 'deposit', label: 'Security Deposit', emoji: '🔒' },
+  { value: 'interest', label: 'Interest', emoji: '🏦' },
   { value: 'parking', label: 'Parking', emoji: '🅿️' },
   { value: 'laundry', label: 'Laundry', emoji: '🧺' },
+  { value: 'reimbursement', label: 'Reimbursement', emoji: '🔄' },
   { value: 'other', label: 'Other Income', emoji: '💵' },
 ];
 

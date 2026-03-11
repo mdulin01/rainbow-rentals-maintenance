@@ -146,6 +146,18 @@ const PropertyCard = ({ property, onEdit, onDelete, onViewDetails, documents = [
                   </button>
                 )}
               </div>
+              {/* Lease dates */}
+              {(() => {
+                const activeTenants = tenants.filter(t => t.leaseStart || t.leaseEnd);
+                if (activeTenants.length === 0) return null;
+                const t = activeTenants[0];
+                const fmt = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+                return (
+                  <p className="text-[10px] text-white/35 mt-1">
+                    Lease: {fmt(t.leaseStart)} – {fmt(t.leaseEnd)}
+                  </p>
+                );
+              })()}
             </div>
           </div>
 

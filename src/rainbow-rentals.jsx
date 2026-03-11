@@ -1253,6 +1253,117 @@ export default function RainbowRentals() {
                 <div>
                   <h2 className="text-xl font-bold text-white mb-4">Action Items</h2>
 
+                  {/* Rents Due / Past Due */}
+                  {(() => {
+                    const now = new Date();
+                    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                    const dayOfMonth = now.getDate();
+                    const monthLabel = now.toLocaleString('en-US', { month: 'long' });
+
+                    // Find rented properties that haven't paid this month
+                    const rentedProps = properties.filter(p =>
+                      ['occupied', 'lease-expired', 'month-to-month'].includes(
+                        p.propertyStatus || (getPropertyTenants(p).length > 0 ? 'occupied' : 'vacant')
+                      )
+                    );
+                    const paidPropIds = new Set(
+                      rentPayments
+                        .filter(r => (r.status === 'paid' || r.status === 'partial') && (r.datePaid || r.month || '').startsWith(currentMonth))
+                        .map(r => String(r.propertyId))
+                    );
+                    const unpaidProps = rentedProps.filter(p => !paidPropIds.has(String(p.id)));
+
+                    if (unpaidProps.length === 0) return null;
+                    const isPastDue = dayOfMonth > 5;
+                    return (
+                      <div className="mb-6">
+                        <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3">
+                          {isPastDue ? 'Rents Past Due' : 'Rents Due'} — {monthLabel}
+                        </h3>
+                        <div className="space-y-2">
+                          {unpaidProps.map(p => (
+                            <button key={p.id}
+                              onClick={() => { setActiveSection('rent'); }}
+                              className={`w-full text-left p-3 rounded-2xl border transition ${
+                                isPastDue
+                                  ? 'bg-red-500/10 border-red-500/20 hover:bg-red-500/15'
+                                  : 'bg-yellow-500/10 border-yellow-500/20 hover:bg-yellow-500/15'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm">{p.emoji || '🏠'}</span>
+                                  <span className={`text-sm font-medium ${isPastDue ? 'text-red-400' : 'text-yellow-400'}`}>{p.name}</span>
+                                </div>
+                                <span className={`text-sm font-bold ${isPastDue ? 'text-red-400' : 'text-yellow-400'}`}>
+                                  {formatCurrency(parseFloat(p.monthlyRent) || 0)}
+                                </span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Lease Alerts — Expired or Expiring Within 30 Days */}
+                  {(() => {
+                    const leaseAlerts = [];
+                    properties.forEach(p => {
+                      const tenants = getPropertyTenants(p);
+                      tenants.forEach(t => {
+                        if (!t.leaseEnd) return;
+                        const end = new Date(t.leaseEnd + 'T00:00:00');
+                        const today = new Date(); today.setHours(0, 0, 0, 0);
+                        const days = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+                        if (days <= 30) {
+                          leaseAlerts.push({ property: p, tenant: t, days, expired: days <= 0 });
+                        }
+                      });
+                    });
+                    // Sort: expired first, then by days ascending
+                    leaseAlerts.sort((a, b) => a.days - b.days);
+
+                    if (leaseAlerts.length === 0) return null;
+                    return (
+                      <div className="mb-6">
+                        <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3">Lease Alerts</h3>
+                        <div className="space-y-2">
+                          {leaseAlerts.map((alert, idx) => (
+                            <button key={`${alert.property.id}-${alert.tenant.id || idx}`}
+                              onClick={() => { setActiveSection('rentals'); setSelectedProperty(alert.property); }}
+                              className={`w-full text-left p-3 rounded-2xl border transition ${
+                                alert.expired
+                                  ? 'bg-red-500/10 border-red-500/20 hover:bg-red-500/15'
+                                  : 'bg-orange-500/10 border-orange-500/20 hover:bg-orange-500/15'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm">{alert.property.emoji || '🏠'}</span>
+                                  <div>
+                                    <span className={`text-sm font-medium ${alert.expired ? 'text-red-400' : 'text-orange-400'}`}>
+                                      {alert.property.name}
+                                    </span>
+                                    {alert.tenant.name && (
+                                      <span className="text-xs text-white/40 ml-2">({alert.tenant.name})</span>
+                                    )}
+                                  </div>
+                                </div>
+                                <span className={`text-xs font-semibold ${alert.expired ? 'text-red-400' : 'text-orange-400'}`}>
+                                  {alert.expired ? 'Expired' : `${alert.days}d left`}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-white/40 mt-1">
+                                {alert.expired ? 'Lease has expired — renew or update' : 'Lease expiring soon — plan renewal'}
+                              </p>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {/* Active Move-In/Move-Out Checklists */}
                   {(() => {
                     const activeChecklists = sharedLists.filter(l =>
